@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import { Layers, Train, Bus, Check } from "lucide-react";
+import { Layers, Train, Bus, Check, SlidersHorizontal, Map as MapIcon } from "lucide-react";
 import {
   BusStopProperties,
   BusStopGeoJSON,
@@ -20,6 +20,7 @@ interface MapViewProps {
 interface BasemapOption {
   id: string;
   name: string;
+  category: "Google" | "Satellite" | "Vector / Clean";
   url: string;
   options: L.TileLayerOptions;
 }
@@ -28,6 +29,7 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
   {
     id: "carto_dark",
     name: "Carto Dark Matter",
+    category: "Vector / Clean",
     url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",
     options: {
       subdomains: ["a", "b", "c", "d"],
@@ -38,6 +40,7 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
   {
     id: "google_streets",
     name: "Google Streets",
+    category: "Google",
     url: "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en",
     options: {
       subdomains: ["mt0", "mt1", "mt2", "mt3"],
@@ -47,7 +50,8 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
   },
   {
     id: "google_hybrid",
-    name: "Google Satellite",
+    name: "Google Hybrid",
+    category: "Google",
     url: "https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}&hl=en",
     options: {
       subdomains: ["mt0", "mt1", "mt2", "mt3"],
@@ -56,8 +60,40 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
     },
   },
   {
-    id: "osm",
+    id: "google_terrain",
+    name: "Google Terrain",
+    category: "Google",
+    url: "https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}&hl=en",
+    options: {
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      maxZoom: 20,
+      attribution: "&copy; Google Maps",
+    },
+  },
+  {
+    id: "esri_imagery",
+    name: "Esri World Imagery",
+    category: "Satellite",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    options: {
+      maxZoom: 19,
+      attribution: "&copy; Esri &copy; Earthstar Geographics",
+    },
+  },
+  {
+    id: "waze",
+    name: "Waze Map",
+    category: "Vector / Clean",
+    url: "https://worldtiles1.waze.com/tiles/{z}/{x}/{y}.png",
+    options: {
+      maxZoom: 19,
+      attribution: "&copy; Waze Mobile",
+    },
+  },
+  {
+    id: "osm_de",
     name: "OpenStreetMap",
+    category: "Vector / Clean",
     url: "https://tile.openstreetmap.de/{z}/{x}/{y}.png",
     options: {
       maxZoom: 19,
@@ -82,9 +118,16 @@ export const MapView: React.FC<MapViewProps> = ({
   const busStopsLayerRef = useRef<L.LayerGroup | null>(null);
   const markersMapRef = useRef<Map<string, L.CircleMarker>>(new Map());
 
-  const [activeBasemap, setActiveBasemap] = useState<string>("carto_dark");
+  const [activeBasemapId, setActiveBasemapId] = useState<string>("carto_dark");
   const [showBasemapMenu, setShowBasemapMenu] = useState<boolean>(false);
+  const [showLayerMenu, setShowLayerMenu] = useState<boolean>(false);
+
+  // Layer Toggles
   const [showRailLines, setShowRailLines] = useState<boolean>(true);
+  const [showBusStops, setShowBusStops] = useState<boolean>(true);
+  const [showKlBoundary, setShowKlBoundary] = useState<boolean>(true);
+
+  const activeBasemap = BASEMAP_OPTIONS.find((b) => b.id === activeBasemapId) || BASEMAP_OPTIONS[0];
 
   // Initialize Map
   useEffect(() => {
@@ -94,7 +137,7 @@ export const MapView: React.FC<MapViewProps> = ({
       center: [3.140853, 101.693207],
       zoom: 12,
       minZoom: 9,
-      maxZoom: 18,
+      maxZoom: 19,
       zoomControl: false,
     });
 
@@ -116,23 +159,25 @@ export const MapView: React.FC<MapViewProps> = ({
   // Switch Basemap
   useEffect(() => {
     if (!mapRef.current) return;
-    const selected = BASEMAP_OPTIONS.find((b) => b.id === activeBasemap) || BASEMAP_OPTIONS[0];
     if (tileLayerRef.current) {
       mapRef.current.removeLayer(tileLayerRef.current);
     }
-    const newTileLayer = L.tileLayer(selected.url, selected.options).addTo(mapRef.current);
+    const newTileLayer = L.tileLayer(activeBasemap.url, activeBasemap.options).addTo(mapRef.current);
     tileLayerRef.current = newTileLayer;
     if (tileLayerRef.current.bringToBack) {
       tileLayerRef.current.bringToBack();
     }
-  }, [activeBasemap]);
+  }, [activeBasemapId]);
 
   // Render KL Boundary
   useEffect(() => {
-    if (!mapRef.current || !klBoundary) return;
+    if (!mapRef.current) return;
     if (boundaryLayerRef.current) {
       mapRef.current.removeLayer(boundaryLayerRef.current);
+      boundaryLayerRef.current = null;
     }
+
+    if (!showKlBoundary || !klBoundary) return;
 
     const boundary = L.geoJSON(klBoundary, {
       style: {
@@ -145,16 +190,17 @@ export const MapView: React.FC<MapViewProps> = ({
     }).addTo(mapRef.current);
 
     boundaryLayerRef.current = boundary;
-  }, [klBoundary]);
+  }, [klBoundary, showKlBoundary]);
 
   // Render Rail Lines
   useEffect(() => {
-    if (!mapRef.current || !railLines) return;
+    if (!mapRef.current) return;
     if (railLayerRef.current) {
       mapRef.current.removeLayer(railLayerRef.current);
+      railLayerRef.current = null;
     }
 
-    if (!showRailLines) return;
+    if (!showRailLines || !railLines) return;
 
     const rail = L.geoJSON(railLines, {
       style: (feature) => {
@@ -183,10 +229,12 @@ export const MapView: React.FC<MapViewProps> = ({
 
   // Render Bus Stop Circle Markers
   useEffect(() => {
-    if (!mapRef.current || !busStops || !busStopsLayerRef.current) return;
+    if (!mapRef.current || !busStopsLayerRef.current) return;
 
     busStopsLayerRef.current.clearLayers();
     markersMapRef.current.clear();
+
+    if (!showBusStops || !busStops) return;
 
     busStops.features.forEach((feat) => {
       const [lon, lat] = feat.geometry.coordinates;
@@ -197,7 +245,7 @@ export const MapView: React.FC<MapViewProps> = ({
       if (!isVisible) return;
 
       const circle = L.circleMarker([lat, lon], {
-        radius: isSelected ? 8 : 5,
+        radius: isSelected ? 9 : 5,
         color: isSelected ? "#38bdf8" : props.color,
         weight: isSelected ? 3 : 1,
         fillColor: props.color,
@@ -224,67 +272,133 @@ export const MapView: React.FC<MapViewProps> = ({
       circle.addTo(busStopsLayerRef.current!);
       markersMapRef.current.set(props.stop_id, circle);
     });
-  }, [busStops, filteredStopsIds, selectedStopId]);
+  }, [busStops, filteredStopsIds, selectedStopId, showBusStops]);
 
-  // Smooth Pan when stop is selected
+  // Zoom to the stop when clicked / selected
   useEffect(() => {
     if (!mapRef.current || !selectedStopId) return;
     const marker = markersMapRef.current.get(selectedStopId);
     if (marker) {
       const latLng = marker.getLatLng();
-      mapRef.current.panTo(latLng, { duration: 0.8 });
+      mapRef.current.flyTo(latLng, 16, { duration: 1.0 });
     }
   }, [selectedStopId]);
 
   return (
-    <div className="relative flex-1 h-[calc(100vh-4rem)] bg-slate-950 overflow-hidden">
+    <div className="relative w-full h-full bg-slate-950 overflow-hidden">
       {/* Map Target */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
-      {/* Floating Controls (Basemap Switcher & Rail Toggle) */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-        {/* Toggle Rail Lines */}
-        <button
-          onClick={() => setShowRailLines((prev) => !prev)}
-          className={`px-3 py-2 rounded-xl text-xs font-semibold shadow-xl border flex items-center gap-2 transition-all ${
-            showRailLines
-              ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-              : "bg-slate-900/90 text-slate-400 border-slate-800"
-          }`}
-        >
-          <Train className="w-4 h-4" />
-          <span>Rail Corridors</span>
-        </button>
-
-        {/* Basemap Switcher */}
+      {/* Floating Controls: Layer Switcher & Multi-Basemap Switcher */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2.5">
+        {/* Layer Switcher Dropdown */}
         <div className="relative">
           <button
-            onClick={() => setShowBasemapMenu((prev) => !prev)}
+            onClick={() => {
+              setShowLayerMenu((prev) => !prev);
+              setShowBasemapMenu(false);
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xl border flex items-center gap-2 transition-all backdrop-blur-md ${
+              showLayerMenu
+                ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                : "bg-slate-900/90 text-slate-200 border-slate-800 hover:bg-slate-800"
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+            <span>Layers</span>
+          </button>
+
+          {showLayerMenu && (
+            <div className="absolute right-0 top-full mt-2 w-60 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-2.5 z-30 space-y-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                Toggle Map Layers
+              </div>
+
+              {/* Rail Lines Toggle */}
+              <label className="flex items-center justify-between p-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 cursor-pointer transition-colors">
+                <div className="flex items-center gap-2 text-xs text-slate-200">
+                  <Train className="w-4 h-4 text-red-400" />
+                  <span>Rail Corridors (MRT/LRT)</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={showRailLines}
+                  onChange={(e) => setShowRailLines(e.target.checked)}
+                  className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 accent-amber-500"
+                />
+              </label>
+
+              {/* Bus Stops Toggle */}
+              <label className="flex items-center justify-between p-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 cursor-pointer transition-colors">
+                <div className="flex items-center gap-2 text-xs text-slate-200">
+                  <Bus className="w-4 h-4 text-amber-400" />
+                  <span>Bus Stop Points</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={showBusStops}
+                  onChange={(e) => setShowBusStops(e.target.checked)}
+                  className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 accent-amber-500"
+                />
+              </label>
+
+              {/* KL Boundary Toggle */}
+              <label className="flex items-center justify-between p-2 rounded-lg bg-slate-800/40 hover:bg-slate-800 cursor-pointer transition-colors">
+                <div className="flex items-center gap-2 text-xs text-slate-200">
+                  <MapIcon className="w-4 h-4 text-emerald-400" />
+                  <span>KL City Boundary</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={showKlBoundary}
+                  onChange={(e) => setShowKlBoundary(e.target.checked)}
+                  className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 accent-amber-500"
+                />
+              </label>
+            </div>
+          )}
+        </div>
+
+        {/* Basemap Switcher (7 options identical to Health Spatial Explorer) */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowBasemapMenu((prev) => !prev);
+              setShowLayerMenu(false);
+            }}
             className="px-3.5 py-2 bg-slate-900/90 backdrop-blur-md hover:bg-slate-800 text-slate-200 text-xs font-medium rounded-xl border border-slate-800 shadow-xl flex items-center gap-2 transition-colors"
           >
             <Layers className="w-4 h-4 text-amber-400" />
-            <span className="hidden sm:inline">Basemap</span>
+            <span>Basemap: {activeBasemap.name}</span>
           </button>
 
           {showBasemapMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-1.5 space-y-1 text-xs">
-              {BASEMAP_OPTIONS.map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => {
-                    setActiveBasemap(opt.id);
-                    setShowBasemapMenu(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between transition-colors ${
-                    activeBasemap === opt.id
-                      ? "bg-amber-500/10 text-amber-400 font-semibold"
-                      : "text-slate-300 hover:bg-slate-800"
-                  }`}
-                >
-                  <span>{opt.name}</span>
-                  {activeBasemap === opt.id && <Check className="w-3.5 h-3.5 text-amber-400" />}
-                </button>
-              ))}
+            <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-2 z-30 divide-y divide-slate-800/60">
+              <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Select Basemap Layer
+              </div>
+              <div className="py-1 space-y-1">
+                {BASEMAP_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      setActiveBasemapId(opt.id);
+                      setShowBasemapMenu(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                      activeBasemapId === opt.id
+                        ? "bg-amber-500/20 text-amber-300 font-semibold"
+                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    <div>
+                      <div>{opt.name}</div>
+                      <div className="text-[10px] text-slate-500">{opt.category}</div>
+                    </div>
+                    {activeBasemapId === opt.id && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -143,19 +143,21 @@ export function App() {
           councils={councils}
         />
 
-        <MapView
-          busStops={busStops}
-          railLines={railLines}
-          klBoundary={klBoundary}
-          selectedStopId={selectedStop?.stop_id || null}
-          onSelectStop={(stop) => setSelectedStop(stop)}
-          filteredStopsIds={filteredStopsIds}
-        />
+        <main className="flex-1 relative h-full overflow-hidden">
+          <MapView
+            busStops={busStops}
+            railLines={railLines}
+            klBoundary={klBoundary}
+            selectedStopId={selectedStop?.stop_id || null}
+            onSelectStop={(stop) => setSelectedStop(stop)}
+            filteredStopsIds={filteredStopsIds}
+          />
 
-        <BusStopDrawer
-          stop={selectedStop}
-          onClose={() => setSelectedStop(null)}
-        />
+          <BusStopDrawer
+            stop={selectedStop}
+            onClose={() => setSelectedStop(null)}
+          />
+        </main>
       </div>
 
       <AdvocacyModal
