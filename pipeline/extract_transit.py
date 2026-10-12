@@ -16,32 +16,44 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = BASE_DIR / "public" / "data"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+ADM1_INPUT = Path("C:/Users/DataMicron/Desktop/kri/data/boundaries/geoBoundaries-MYS-ADM1.geojson")
 ADM2_INPUT = Path("C:/Users/DataMicron/Desktop/kri/data/boundaries/geoBoundaries-MYS-ADM2.geojson")
 KRI_CSV_URL = "https://raw.githubusercontent.com/KRI-Data/GKLMOB-anatomy-of-busstops/main/busstop_quality_with_coordinates.csv"
 
 def extract_kl_boundary():
-    print("1. Extracting Kuala Lumpur boundary from ADM2...")
-    if not ADM2_INPUT.exists():
-        print(f"Warning: {ADM2_INPUT} not found.")
-        return
+    print("1. Extracting Kuala Lumpur, Selangor, and Putrajaya boundaries...")
+    target_names = {"kuala lumpur", "selangor", "putrajaya"}
+    features = []
 
-    with open(ADM2_INPUT, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    # Try ADM1 first for state boundaries
+    if ADM1_INPUT.exists():
+        with open(ADM1_INPUT, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for feat in data["features"]:
+            name = feat["properties"].get("shapeName", "").strip()
+            if name.lower() in target_names:
+                feat["properties"]["displayName"] = name
+                features.append(feat)
 
-    kl_features = [
-        f for f in data["features"]
-        if f["properties"].get("shapeName", "").strip().lower() == "kuala lumpur"
-    ]
+    # Fallback to ADM2 if needed
+    if not features and ADM2_INPUT.exists():
+        with open(ADM2_INPUT, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for feat in data["features"]:
+            name = feat["properties"].get("shapeName", "").strip()
+            if name.lower() in target_names:
+                feat["properties"]["displayName"] = name
+                features.append(feat)
 
     out_boundary = {
         "type": "FeatureCollection",
-        "features": kl_features
+        "features": features
     }
 
     out_path = OUTPUT_DIR / "kl_boundary.geojson"
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out_boundary, f, ensure_ascii=False)
-    print(f"   Saved KL boundary: {out_path} ({len(kl_features)} feature)")
+    print(f"   Saved boundaries: {out_path} ({len(features)} features: KL, Selangor, Putrajaya)")
 
 def extract_bus_stops():
     print("2. Downloading & processing KRI bus stop detection dataset...")

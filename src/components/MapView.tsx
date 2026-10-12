@@ -27,17 +27,6 @@ interface BasemapOption {
 
 const BASEMAP_OPTIONS: BasemapOption[] = [
   {
-    id: "carto_dark",
-    name: "Carto Dark Matter",
-    category: "Vector / Clean",
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",
-    options: {
-      subdomains: ["a", "b", "c", "d"],
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-    },
-  },
-  {
     id: "google_streets",
     name: "Google Streets",
     category: "Google",
@@ -68,6 +57,17 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
       subdomains: ["mt0", "mt1", "mt2", "mt3"],
       maxZoom: 20,
       attribution: "&copy; Google Maps",
+    },
+  },
+  {
+    id: "carto_dark",
+    name: "Carto Dark Matter",
+    category: "Vector / Clean",
+    url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",
+    options: {
+      subdomains: ["a", "b", "c", "d"],
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
     },
   },
   {
@@ -119,7 +119,8 @@ export const MapView: React.FC<MapViewProps> = ({
   const markersMapRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const prevSelectedIdRef = useRef<string | null>(null);
 
-  const [activeBasemapId, setActiveBasemapId] = useState<string>("carto_dark");
+  // Set default basemap to Google Streets
+  const [activeBasemapId, setActiveBasemapId] = useState<string>("google_streets");
   const [showBasemapMenu, setShowBasemapMenu] = useState<boolean>(false);
   const [showLayerMenu, setShowLayerMenu] = useState<boolean>(false);
 
@@ -127,6 +128,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const [showRailLines, setShowRailLines] = useState<boolean>(true);
   const [showBusStops, setShowBusStops] = useState<boolean>(true);
   const [showKlBoundary, setShowKlBoundary] = useState<boolean>(true);
+  const [showSelangorBoundary, setShowSelangorBoundary] = useState<boolean>(true);
 
   const activeBasemap = BASEMAP_OPTIONS.find((b) => b.id === activeBasemapId) || BASEMAP_OPTIONS[0];
 
@@ -144,7 +146,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    const initialBasemap = BASEMAP_OPTIONS[0];
+    const initialBasemap = BASEMAP_OPTIONS.find((b) => b.id === "google_streets") || BASEMAP_OPTIONS[0];
     const tileLayer = L.tileLayer(initialBasemap.url, initialBasemap.options).addTo(map);
 
     tileLayerRef.current = tileLayer;
@@ -170,7 +172,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }
   }, [activeBasemapId]);
 
-  // 3. Render KL Boundary (Cyan styling matching health explorer)
+  // 3. Render KL, Selangor, & Putrajaya Boundaries
   useEffect(() => {
     if (!mapRef.current) return;
     if (boundaryLayerRef.current) {
@@ -178,20 +180,62 @@ export const MapView: React.FC<MapViewProps> = ({
       boundaryLayerRef.current = null;
     }
 
-    if (!showKlBoundary || !klBoundary) return;
+    if (!klBoundary) return;
 
     const boundary = L.geoJSON(klBoundary, {
-      style: {
-        color: "#38bdf8",
-        weight: 2,
-        dashArray: "4, 4",
-        fillColor: "#0284c7",
-        fillOpacity: 0.05,
+      filter: (feature) => {
+        const name = feature?.properties?.shapeName?.toLowerCase() || "";
+        if (name.includes("kuala lumpur")) {
+          return showKlBoundary;
+        }
+        return showSelangorBoundary;
+      },
+      style: (feature) => {
+        const name = feature?.properties?.shapeName?.toLowerCase() || "";
+        if (name.includes("kuala lumpur")) {
+          // KL City Boundary: prominent, darker, bold border
+          return {
+            color: "#0369a1", // Dark blue border
+            weight: 3.5,
+            opacity: 1,
+            fillColor: "#0284c7",
+            fillOpacity: 0.08,
+          };
+        } else if (name.includes("putrajaya")) {
+          // Putrajaya Boundary
+          return {
+            color: "#4f46e5", // Indigo
+            weight: 3,
+            opacity: 0.95,
+            fillColor: "#6366f1",
+            fillOpacity: 0.08,
+          };
+        } else {
+          // Selangor Boundary
+          return {
+            color: "#334155", // Slate dark stroke
+            weight: 2.5,
+            dashArray: "6, 6",
+            opacity: 0.85,
+            fillColor: "#64748b",
+            fillOpacity: 0.03,
+          };
+        }
+      },
+      onEachFeature: (feature, layer) => {
+        const name = feature?.properties?.displayName || feature?.properties?.shapeName || "Boundary";
+        layer.bindTooltip(
+          `<div style="font-family:Inter,sans-serif;font-size:11px;">
+            <strong>${name}</strong><br/>
+            <span style="color:#64748b;font-size:10px;">Administrative Boundary</span>
+          </div>`,
+          { className: "custom-transit-tooltip", sticky: true }
+        );
       },
     }).addTo(mapRef.current);
 
     boundaryLayerRef.current = boundary;
-  }, [klBoundary, showKlBoundary]);
+  }, [klBoundary, showKlBoundary, showSelangorBoundary]);
 
   // 4. Render Rail Lines
   useEffect(() => {
@@ -252,9 +296,9 @@ export const MapView: React.FC<MapViewProps> = ({
       });
 
       circle.bindTooltip(
-        `<div style="font-family:Inter,sans-serif;">
+        `<div style="font-family:Inter,sans-serif;font-size:11px;">
           <strong>${props.stop_name}</strong><br/>
-          <span style="color:#38bdf8;">Quality: ${props.quality_score.toFixed(0)}/9</span> • <span style="color:#94a3b8;">${props.council}</span>
+          <span style="color:#0284c7;">Quality: ${props.quality_score.toFixed(0)}/9</span> • <span style="color:#64748b;">${props.council}</span>
         </div>`,
         {
           className: "custom-transit-tooltip",
@@ -282,7 +326,7 @@ export const MapView: React.FC<MapViewProps> = ({
       const prevMarker = markersMapRef.current.get(prevSelectedIdRef.current);
       if (prevMarker && busStops) {
         const feat = busStops.features.find((f) => f.properties.stop_id === prevSelectedIdRef.current);
-        const col = feat?.properties.color || "#38bdf8";
+        const col = feat?.properties.color || "#0284c7";
         prevMarker.setStyle({
           radius: 5,
           color: col,
@@ -299,7 +343,7 @@ export const MapView: React.FC<MapViewProps> = ({
       if (currentMarker) {
         currentMarker.setStyle({
           radius: 9,
-          color: "#38bdf8",
+          color: "#0284c7",
           weight: 3.5,
           fillColor: "#38bdf8",
           fillOpacity: 1,
@@ -358,16 +402,44 @@ export const MapView: React.FC<MapViewProps> = ({
           </button>
 
           {showLayerMenu && (
-            <div className="absolute right-0 top-full mt-2 w-60 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-2 z-30 divide-y divide-slate-800/60">
+            <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-2 z-30 divide-y divide-slate-800/60">
               <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 Toggle Map Layers
               </div>
 
               <div className="py-1 space-y-1">
+                {/* KL Boundary Toggle */}
+                <label className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 cursor-pointer transition-colors">
+                  <div className="flex items-center gap-2 text-xs text-slate-200">
+                    <MapIcon className="w-4 h-4 text-sky-400" />
+                    <span>KL City Boundary (DBKL)</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={showKlBoundary}
+                    onChange={(e) => setShowKlBoundary(e.target.checked)}
+                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
+                  />
+                </label>
+
+                {/* Selangor & Putrajaya Boundary Toggle */}
+                <label className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 cursor-pointer transition-colors">
+                  <div className="flex items-center gap-2 text-xs text-slate-200">
+                    <MapIcon className="w-4 h-4 text-indigo-400" />
+                    <span>Selangor & Putrajaya</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={showSelangorBoundary}
+                    onChange={(e) => setShowSelangorBoundary(e.target.checked)}
+                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
+                  />
+                </label>
+
                 {/* Rail Lines Toggle */}
                 <label className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 cursor-pointer transition-colors">
                   <div className="flex items-center gap-2 text-xs text-slate-200">
-                    <Train className="w-4 h-4 text-cyan-400" />
+                    <Train className="w-4 h-4 text-red-400" />
                     <span>Rail Corridors (MRT/LRT)</span>
                   </div>
                   <input
@@ -391,26 +463,12 @@ export const MapView: React.FC<MapViewProps> = ({
                     className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
                   />
                 </label>
-
-                {/* KL Boundary Toggle */}
-                <label className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 cursor-pointer transition-colors">
-                  <div className="flex items-center gap-2 text-xs text-slate-200">
-                    <MapIcon className="w-4 h-4 text-cyan-400" />
-                    <span>KL City Boundary</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={showKlBoundary}
-                    onChange={(e) => setShowKlBoundary(e.target.checked)}
-                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
-                  />
-                </label>
               </div>
             </div>
           )}
         </div>
 
-        {/* Basemap Switcher (Identical to Health Spatial Explorer) */}
+        {/* Basemap Switcher (Default: Google Streets) */}
         <div className="relative">
           <button
             onClick={() => {
