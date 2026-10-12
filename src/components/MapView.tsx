@@ -226,9 +226,6 @@ export const MapView: React.FC<MapViewProps> = ({
 
   const activeBasemap = BASEMAP_OPTIONS.find((b) => b.id === activeBasemapId) || BASEMAP_OPTIONS[0];
 
-  // Selected stop pulsing radar beacon marker ref
-  const selectedBeaconRef = useRef<L.Marker | null>(null);
-
   // Helper to activate all point layers & bypass scale generalization
   const activatePointLayers = () => {
     setForceShowAllPoints(true);
@@ -281,9 +278,6 @@ export const MapView: React.FC<MapViewProps> = ({
     });
 
     return () => {
-      if (selectedBeaconRef.current && mapRef.current) {
-        mapRef.current.removeLayer(selectedBeaconRef.current);
-      }
       map.remove();
       mapRef.current = null;
     };
@@ -434,12 +428,6 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!markersMapRef.current.size || !busStops) return;
 
-    // Clear previous pulsing beacon if any
-    if (selectedBeaconRef.current && mapRef.current) {
-      mapRef.current.removeLayer(selectedBeaconRef.current);
-      selectedBeaconRef.current = null;
-    }
-
     // Reset previous selected marker style
     if (prevSelectedIdRef.current && prevSelectedIdRef.current !== selectedStopId) {
       const prevMarker = markersMapRef.current.get(prevSelectedIdRef.current);
@@ -457,7 +445,7 @@ export const MapView: React.FC<MapViewProps> = ({
       }
     }
 
-    // Highlight active selected marker, zoom to it, and attach pulsing radar beacon
+    // Highlight active selected marker & smoothly zoom to it
     if (selectedStopId) {
       const currentMarker = markersMapRef.current.get(selectedStopId);
       if (currentMarker && mapRef.current) {
@@ -472,29 +460,6 @@ export const MapView: React.FC<MapViewProps> = ({
         currentMarker.bringToFront();
 
         const latLng = currentMarker.getLatLng();
-
-        // Pulsing radar ping beacon
-        const beaconIcon = L.divIcon({
-          html: `
-            <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 pointer-events-none" style="width:0; height:0;">
-              <span class="absolute inline-flex h-12 w-12 rounded-full bg-cyan-400 opacity-75 animate-ping"></span>
-              <span class="absolute inline-flex h-6 w-6 rounded-full bg-cyan-500/40 border border-cyan-300"></span>
-              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-300 border-2 border-white shadow-lg shadow-cyan-400/80"></span>
-            </div>
-          `,
-          className: "custom-selected-stop-beacon",
-          iconSize: [0, 0],
-          iconAnchor: [0, 0],
-        });
-
-        const beacon = L.marker(latLng, {
-          icon: beaconIcon,
-          interactive: false,
-          zIndexOffset: 3000,
-        }).addTo(mapRef.current);
-
-        selectedBeaconRef.current = beacon;
-
         mapRef.current.flyTo(latLng, 16, { duration: 0.8 });
       }
     }
