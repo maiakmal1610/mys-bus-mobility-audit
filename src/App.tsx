@@ -86,8 +86,14 @@ export function App() {
         ids.add(s.stop_id);
       }
     });
+
+    // Explicitly selected stop is always visible regardless of active sidebar filters
+    if (selectedStop?.stop_id) {
+      ids.add(selectedStop.stop_id);
+    }
+
     return ids;
-  }, [allStops, selectedCouncil, selectedTier, searchQuery]);
+  }, [allStops, selectedCouncil, selectedTier, searchQuery, selectedStop]);
 
   // Aggregate Stats
   const deficientCount = useMemo(() => {

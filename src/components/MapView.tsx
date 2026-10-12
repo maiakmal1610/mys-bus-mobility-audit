@@ -37,6 +37,7 @@ interface BasemapOption {
   name: string;
   category: "Google" | "Satellite" | "Vector / Clean";
   url: string;
+  bgColor: string;
   options: L.TileLayerOptions;
 }
 
@@ -55,9 +56,12 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
     name: "Google Streets",
     category: "Google",
     url: "https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en",
+    bgColor: "#e5e3df",
     options: {
       subdomains: ["mt0", "mt1", "mt2", "mt3"],
       maxZoom: 20,
+      keepBuffer: 8,
+      updateWhenIdle: false,
       attribution: "&copy; Google Maps",
     },
   },
@@ -66,9 +70,12 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
     name: "Google Hybrid",
     category: "Google",
     url: "https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}&hl=en",
+    bgColor: "#111827",
     options: {
       subdomains: ["mt0", "mt1", "mt2", "mt3"],
       maxZoom: 20,
+      keepBuffer: 8,
+      updateWhenIdle: false,
       attribution: "&copy; Google Maps",
     },
   },
@@ -77,9 +84,12 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
     name: "Google Terrain",
     category: "Google",
     url: "https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}&hl=en",
+    bgColor: "#e5e3df",
     options: {
       subdomains: ["mt0", "mt1", "mt2", "mt3"],
       maxZoom: 20,
+      keepBuffer: 8,
+      updateWhenIdle: false,
       attribution: "&copy; Google Maps",
     },
   },
@@ -88,9 +98,12 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
     name: "Carto Dark Matter",
     category: "Vector / Clean",
     url: "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png",
+    bgColor: "#0f172a",
     options: {
       subdomains: ["a", "b", "c", "d"],
       maxZoom: 19,
+      keepBuffer: 8,
+      updateWhenIdle: false,
       attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
     },
   },
@@ -99,8 +112,11 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
     name: "Esri World Imagery",
     category: "Satellite",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    bgColor: "#111827",
     options: {
       maxZoom: 19,
+      keepBuffer: 8,
+      updateWhenIdle: false,
       attribution: "&copy; Esri &copy; Earthstar Geographics",
     },
   },
@@ -109,8 +125,11 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
     name: "Waze Map",
     category: "Vector / Clean",
     url: "https://worldtiles1.waze.com/tiles/{z}/{x}/{y}.png",
+    bgColor: "#e5e3df",
     options: {
       maxZoom: 19,
+      keepBuffer: 8,
+      updateWhenIdle: false,
       attribution: "&copy; Waze Mobile",
     },
   },
@@ -119,8 +138,11 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
     name: "OpenStreetMap",
     category: "Vector / Clean",
     url: "https://tile.openstreetmap.de/{z}/{x}/{y}.png",
+    bgColor: "#e5e3df",
     options: {
       maxZoom: 19,
+      keepBuffer: 8,
+      updateWhenIdle: false,
       attribution: "&copy; OpenStreetMap contributors",
     },
   },
@@ -204,6 +226,24 @@ export const MapView: React.FC<MapViewProps> = ({
 
   const activeBasemap = BASEMAP_OPTIONS.find((b) => b.id === activeBasemapId) || BASEMAP_OPTIONS[0];
 
+  // Selected stop pulsing radar beacon marker ref
+  const selectedBeaconRef = useRef<L.Marker | null>(null);
+
+  // Helper to activate all point layers & bypass scale generalization
+  const activatePointLayers = () => {
+    setForceShowAllPoints(true);
+    setShowDeficientStops(true);
+    setShowModerateStops(true);
+    setShowGoodStops(true);
+  };
+
+  // Automatically activate point layers whenever a station is selected (e.g. from sidebar or search)
+  useEffect(() => {
+    if (selectedStopId) {
+      activatePointLayers();
+    }
+  }, [selectedStopId]);
+
   // Scale generalization: Points only reveal when zoom >= 14, an individual stop is selected, or forced
   const isZoomSufficient = currentZoom >= 14 || Boolean(selectedStopId) || forceShowAllPoints;
 
@@ -217,6 +257,9 @@ export const MapView: React.FC<MapViewProps> = ({
       minZoom: 9,
       maxZoom: 19,
       zoomControl: false,
+      fadeAnimation: true,
+      zoomAnimation: true,
+      markerZoomAnimation: true,
     });
 
     L.control.zoom({ position: "bottomright" }).addTo(map);
@@ -228,12 +271,19 @@ export const MapView: React.FC<MapViewProps> = ({
     busStopsLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
+    if (mapContainerRef.current) {
+      mapContainerRef.current.style.backgroundColor = initialBasemap.bgColor || "#e5e3df";
+    }
+
     // Track zoom level for scale-dependent generalization
     map.on("zoomend", () => {
       setCurrentZoom(map.getZoom());
     });
 
     return () => {
+      if (selectedBeaconRef.current && mapRef.current) {
+        mapRef.current.removeLayer(selectedBeaconRef.current);
+      }
       map.remove();
       mapRef.current = null;
     };
@@ -257,6 +307,9 @@ export const MapView: React.FC<MapViewProps> = ({
     tileLayerRef.current = newTileLayer;
     if (tileLayerRef.current.bringToBack) {
       tileLayerRef.current.bringToBack();
+    }
+    if (mapContainerRef.current) {
+      mapContainerRef.current.style.backgroundColor = activeBasemap.bgColor || "#e5e3df";
     }
   }, [activeBasemapId]);
 
@@ -381,6 +434,12 @@ export const MapView: React.FC<MapViewProps> = ({
   useEffect(() => {
     if (!markersMapRef.current.size || !busStops) return;
 
+    // Clear previous pulsing beacon if any
+    if (selectedBeaconRef.current && mapRef.current) {
+      mapRef.current.removeLayer(selectedBeaconRef.current);
+      selectedBeaconRef.current = null;
+    }
+
     // Reset previous selected marker style
     if (prevSelectedIdRef.current && prevSelectedIdRef.current !== selectedStopId) {
       const prevMarker = markersMapRef.current.get(prevSelectedIdRef.current);
@@ -393,25 +452,50 @@ export const MapView: React.FC<MapViewProps> = ({
           weight: 1,
           fillColor: col,
           fillOpacity: 0.65,
+          opacity: 1,
         });
       }
     }
 
-    // Highlight active selected marker & smoothly zoom to it
+    // Highlight active selected marker, zoom to it, and attach pulsing radar beacon
     if (selectedStopId) {
       const currentMarker = markersMapRef.current.get(selectedStopId);
-      if (currentMarker) {
+      if (currentMarker && mapRef.current) {
         currentMarker.setStyle({
           radius: 9,
-          color: "#0284c7",
+          color: "#ffffff",
           weight: 3.5,
-          fillColor: "#38bdf8",
+          fillColor: "#0284c7",
           fillOpacity: 1,
+          opacity: 1,
         });
         currentMarker.bringToFront();
 
         const latLng = currentMarker.getLatLng();
-        mapRef.current?.flyTo(latLng, 16, { duration: 0.8 });
+
+        // Pulsing radar ping beacon
+        const beaconIcon = L.divIcon({
+          html: `
+            <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 pointer-events-none" style="width:0; height:0;">
+              <span class="absolute inline-flex h-12 w-12 rounded-full bg-cyan-400 opacity-75 animate-ping"></span>
+              <span class="absolute inline-flex h-6 w-6 rounded-full bg-cyan-500/40 border border-cyan-300"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-300 border-2 border-white shadow-lg shadow-cyan-400/80"></span>
+            </div>
+          `,
+          className: "custom-selected-stop-beacon",
+          iconSize: [0, 0],
+          iconAnchor: [0, 0],
+        });
+
+        const beacon = L.marker(latLng, {
+          icon: beaconIcon,
+          interactive: false,
+          zIndexOffset: 3000,
+        }).addTo(mapRef.current);
+
+        selectedBeaconRef.current = beacon;
+
+        mapRef.current.flyTo(latLng, 16, { duration: 0.8 });
       }
     }
     prevSelectedIdRef.current = selectedStopId;
@@ -423,21 +507,34 @@ export const MapView: React.FC<MapViewProps> = ({
       const marker = markersMapRef.current.get(stopId);
       if (!marker) return;
 
+      const isSelected = stopId === selectedStopId;
+
+      // CRITICAL: The selected station must ALWAYS be 100% visible with white accent border
+      if (isSelected) {
+        marker.setStyle({
+          radius: 9,
+          color: "#ffffff",
+          weight: 3.5,
+          fillColor: "#0284c7",
+          fillOpacity: 1,
+          opacity: 1,
+        });
+        marker.bringToFront();
+        return; // NEVER let the tier or zoom logic hide the selected stop!
+      }
+
       const isTierActive =
         (score < 3 && showDeficientStops) ||
         (score >= 3 && score < 6 && showModerateStops) ||
         (score >= 6 && showGoodStops);
 
       const isVisible = isZoomSufficient && isTierActive && filteredStopsIds.has(stopId);
-      const isSelected = stopId === selectedStopId;
 
       if (isVisible) {
-        if (!isSelected) {
-          marker.setStyle({
-            opacity: 1,
-            fillOpacity: 0.65,
-          });
-        }
+        marker.setStyle({
+          opacity: 1,
+          fillOpacity: 0.65,
+        });
       } else {
         marker.setStyle({
           opacity: 0,
@@ -455,9 +552,10 @@ export const MapView: React.FC<MapViewProps> = ({
     isZoomSufficient,
   ]);
 
-  // Jump to Area
+  // Jump to Area & automatically activate point layers
   const handleJumpToCoords = (lat: number, lon: number, zoom = 15) => {
-    mapRef.current?.flyTo([lat, lon], zoom, { duration: 1.2 });
+    activatePointLayers();
+    mapRef.current?.flyTo([lat, lon], zoom, { duration: 1.0 });
   };
 
   // Query OpenStreetMap Geocoder (Photon by Komoot with CORS & Greater KL spatial bias)
@@ -580,9 +678,11 @@ export const MapView: React.FC<MapViewProps> = ({
   const handleSelectSearchResult = (item: SearchResultItem) => {
     setShowDropdown(false);
     setFloatingSearch(item.title);
+    activatePointLayers();
 
     if (item.type === "stop" && item.stopData) {
       onSelectStop(item.stopData);
+      handleJumpToCoords(item.coords[0], item.coords[1], 16);
     } else {
       handleJumpToCoords(item.coords[0], item.coords[1], 15);
     }
@@ -593,6 +693,8 @@ export const MapView: React.FC<MapViewProps> = ({
     e.preventDefault();
     const query = floatingSearch.trim();
     if (!query) return;
+
+    activatePointLayers();
 
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
