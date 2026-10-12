@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Search, AlertOctagon, ChevronRight, Building } from "lucide-react";
+import { Search, AlertOctagon, ChevronRight, ChevronLeft, Building, PanelLeftClose } from "lucide-react";
 import { BusStopProperties } from "../types";
 
 interface SidebarProps {
@@ -13,6 +13,8 @@ interface SidebarProps {
   selectedStopId: string | null;
   onSelectStop: (stopId: string) => void;
   councils: string[];
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -26,6 +28,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedStopId,
   onSelectStop,
   councils,
+  isOpen,
+  onToggle,
 }) => {
   const filteredStops = useMemo(() => {
     return stops.filter((s) => {
@@ -52,9 +56,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [stops]);
 
   return (
-    <aside className="w-96 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800 flex flex-col h-[calc(100vh-4rem)] z-20 flex-shrink-0 text-xs">
+    <aside
+      className={`bg-slate-900/95 backdrop-blur-xl border-r border-slate-800 flex flex-col h-[calc(100vh-4rem)] z-20 flex-shrink-0 text-xs transition-all duration-300 ease-in-out ${
+        isOpen
+          ? "w-96 opacity-100"
+          : "w-0 opacity-0 overflow-hidden border-r-0 pointer-events-none"
+      }`}
+    >
+      {/* Directory Title & Collapse Button */}
+      <div className="p-3.5 border-b border-slate-800/80 flex items-center justify-between bg-slate-800/30">
+        <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs min-w-0">
+          <Building className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+          <span className="truncate">Bus Stops Audit Directory</span>
+        </div>
+        <button
+          onClick={onToggle}
+          title="Collapse sidebar to explore map"
+          className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center gap-1 text-[11px]"
+        >
+          <PanelLeftClose className="w-4 h-4 text-cyan-400" />
+        </button>
+      </div>
+
       {/* Search Bar & Filters */}
-      <div className="p-4 border-b border-slate-800/80 space-y-3">
+      <div className="p-4 border-b border-slate-800/80 space-y-3 flex-shrink-0">
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input

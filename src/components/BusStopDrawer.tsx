@@ -18,12 +18,14 @@ interface BusStopDrawerProps {
   stop: BusStopProperties | null;
   onClose: () => void;
   onReportSubmitted?: () => void;
+  isSidebarCollapsed?: boolean;
 }
 
 export const BusStopDrawer: React.FC<BusStopDrawerProps> = ({
   stop,
   onClose,
   onReportSubmitted,
+  isSidebarCollapsed = false,
 }) => {
   const [rating, setRating] = useState<number>(3);
   const [comment, setComment] = useState<string>("");
@@ -81,7 +83,11 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
   };
 
   return (
-    <div className="absolute top-4 left-4 z-20 w-80 max-h-[380px] bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 text-xs text-slate-200">
+    <div
+      className={`absolute ${
+        isSidebarCollapsed ? "top-16" : "top-4"
+      } left-4 z-20 w-80 max-h-[380px] bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 text-xs text-slate-200`}
+    >
       {/* Pinned Header */}
       <div className="px-4 py-3 border-b border-slate-800/80 bg-slate-800/50 flex items-center justify-between flex-shrink-0">
         <div className="min-w-0 pr-2">

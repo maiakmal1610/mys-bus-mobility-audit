@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useTransition } from "react";
 import L from "leaflet";
 import {
   Layers,
@@ -10,6 +10,9 @@ import {
   Search,
   MapPin,
   X,
+  ZoomIn,
+  Loader2,
+  Navigation,
 } from "lucide-react";
 import {
   BusStopProperties,
@@ -26,6 +29,7 @@ interface MapViewProps {
   onSelectStop: (stop: BusStopProperties) => void;
   filteredStopsIds: Set<string>;
   onAreaSearch?: (query: string) => void;
+  isSidebarOpen?: boolean;
 }
 
 interface BasemapOption {
@@ -34,6 +38,15 @@ interface BasemapOption {
   category: "Google" | "Satellite" | "Vector / Clean";
   url: string;
   options: L.TileLayerOptions;
+}
+
+interface SearchResultItem {
+  id: string;
+  type: "stop" | "place";
+  title: string;
+  subtitle: string;
+  coords: [number, number]; // [lat, lon]
+  stopData?: BusStopProperties;
 }
 
 const BASEMAP_OPTIONS: BasemapOption[] = [
@@ -118,8 +131,10 @@ const POPULAR_AREAS = [
   { name: "KLCC / City", coords: [3.1578, 101.7118], zoom: 15 },
   { name: "Bukit Bintang", coords: [3.1466, 101.711], zoom: 15 },
   { name: "Bangsar", coords: [3.1292, 101.6705], zoom: 15 },
-  { name: "Cheras", coords: [3.1068, 101.7258], zoom: 14 },
+  { name: "Mont Kiara", coords: [3.1699, 101.6521], zoom: 15 },
+  { name: "Mid Valley", coords: [3.1185, 101.6768], zoom: 15 },
   { name: "Petaling Jaya", coords: [3.1189, 101.6214], zoom: 14 },
+  { name: "Cheras", coords: [3.1068, 101.7258], zoom: 14 },
   { name: "Subang Jaya", coords: [3.076, 101.5878], zoom: 14 },
   { name: "Shah Alam", coords: [3.0738, 101.5183], zoom: 14 },
   { name: "Putrajaya", coords: [2.9264, 101.6964], zoom: 14 },
@@ -133,6 +148,7 @@ export const MapView: React.FC<MapViewProps> = ({
   onSelectStop,
   filteredStopsIds,
   onAreaSearch,
+  isSidebarOpen = true,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -143,13 +159,19 @@ export const MapView: React.FC<MapViewProps> = ({
   const markersMapRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const prevSelectedIdRef = useRef<string | null>(null);
 
-  // Set default basemap to Google Streets
+  // Default basemap is Google Streets
   const [activeBasemapId, setActiveBasemapId] = useState<string>("google_streets");
   const [showBasemapMenu, setShowBasemapMenu] = useState<boolean>(false);
   const [showLayerMenu, setShowLayerMenu] = useState<boolean>(false);
 
-  // Layer Toggles
-  const [showRailLines, setShowRailLines] = useState<boolean>(true);
+  // Dynamic Scale-Dependent Zoom & Generalization State
+  const [currentZoom, setCurrentZoom] = useState<number>(12);
+  const [forceShowAllPoints, setForceShowAllPoints] = useState<boolean>(false);
+
+  // 1) Rail lines DISABLED by default upon opening/reloading the app
+  const [showRailLines, setShowRailLines] = useState<boolean>(false);
+
+  // Boundaries active by default
   const [showKlBoundary, setShowKlBoundary] = useState<boolean>(true);
   const [showSelangorBoundary, setShowSelangorBoundary] = useState<boolean>(true);
 
@@ -158,11 +180,32 @@ export const MapView: React.FC<MapViewProps> = ({
   const [showModerateStops, setShowModerateStops] = useState<boolean>(true); // Amber (3-5)
   const [showGoodStops, setShowGoodStops] = useState<boolean>(true); // Green (≥6)
 
-  // Floating Area Search State
+  // 2) Geocoder & Search State
   const [floatingSearch, setFloatingSearch] = useState<string>("");
-  const [showAreaBar, setShowAreaBar] = useState<boolean>(true);
+  const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [showDropdown, setShowDropdown] = useState<boolean>(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   const activeBasemap = BASEMAP_OPTIONS.find((b) => b.id === activeBasemapId) || BASEMAP_OPTIONS[0];
+
+  // Scale generalization: Points only reveal when zoom >= 14, an individual stop is selected, or forced
+  const isZoomSufficient = currentZoom >= 14 || Boolean(selectedStopId) || forceShowAllPoints;
 
   // 1. Initialize Map Once
   useEffect(() => {
@@ -185,11 +228,24 @@ export const MapView: React.FC<MapViewProps> = ({
     busStopsLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
+    // Track zoom level for scale-dependent generalization
+    map.on("zoomend", () => {
+      setCurrentZoom(map.getZoom());
+    });
+
     return () => {
       map.remove();
       mapRef.current = null;
     };
   }, []);
+
+  // Invalidate map dimensions when sidebar collapses or expands
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      mapRef.current?.invalidateSize();
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [isSidebarOpen]);
 
   // 2. Switch Basemap Layer
   useEffect(() => {
@@ -226,7 +282,7 @@ export const MapView: React.FC<MapViewProps> = ({
         const name = feature?.properties?.shapeName?.toLowerCase() || "";
         if (name.includes("kuala lumpur")) {
           return {
-            color: "#0369a1", // Deep crisp sky blue bold border
+            color: "#0369a1", // Bold deep blue border
             weight: 3.5,
             opacity: 1,
             fillColor: "#0284c7",
@@ -251,12 +307,22 @@ export const MapView: React.FC<MapViewProps> = ({
           };
         }
       },
+      onEachFeature: (feature, layer) => {
+        const name = feature?.properties?.displayName || feature?.properties?.shapeName || "Boundary";
+        layer.bindTooltip(
+          `<div style="font-family:Inter,sans-serif;font-size:11px;">
+            <strong>${name}</strong><br/>
+            <span style="color:#64748b;font-size:10px;">Administrative Boundary</span>
+          </div>`,
+          { className: "custom-transit-tooltip", sticky: true }
+        );
+      },
     }).addTo(mapRef.current);
 
     boundaryLayerRef.current = boundary;
   }, [klBoundary, showKlBoundary, showSelangorBoundary]);
 
-  // 4. Render Rail Lines
+  // 4. Render Rail Lines (Disabled by default upon loading)
   useEffect(() => {
     if (!mapRef.current) return;
     if (railLayerRef.current) {
@@ -280,7 +346,7 @@ export const MapView: React.FC<MapViewProps> = ({
     railLayerRef.current = rail;
   }, [railLines, showRailLines]);
 
-  // 5. Create Bus Stop Markers ONCE (Tooltips DISABLED on hover per instructions)
+  // 5. Create Bus Stop Markers ONCE (No hover popups)
   useEffect(() => {
     if (!mapRef.current || !busStops) return;
 
@@ -303,7 +369,6 @@ export const MapView: React.FC<MapViewProps> = ({
         fillOpacity: 0.65,
       });
 
-      // Hover popups disabled completely for distraction-free navigation
       circle.on("click", (e) => {
         L.DomEvent.stopPropagation(e);
         onSelectStop(props);
@@ -314,7 +379,7 @@ export const MapView: React.FC<MapViewProps> = ({
     });
   }, [busStops]);
 
-  // 6. Smooth Style Update & Separate Color Tier Toggles (No flashing DOM churn)
+  // 6. Scale-Dependent Generalization & Selection Styles
   useEffect(() => {
     if (!markersMapRef.current.size || !busStops) return;
 
@@ -353,7 +418,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }
     prevSelectedIdRef.current = selectedStopId;
 
-    // Filter visibility by quality score color layer
+    // Apply scale generalization: hide points when zoomed out unless zoom >= 14, stop selected, or forced
     busStops.features.forEach((feat) => {
       const stopId = feat.properties.stop_id;
       const score = feat.properties.quality_score;
@@ -365,7 +430,7 @@ export const MapView: React.FC<MapViewProps> = ({
         (score >= 3 && score < 6 && showModerateStops) ||
         (score >= 6 && showGoodStops);
 
-      const isVisible = isTierActive && filteredStopsIds.has(stopId);
+      const isVisible = isZoomSufficient && isTierActive && filteredStopsIds.has(stopId);
       const isSelected = stopId === selectedStopId;
 
       if (isVisible) {
@@ -389,30 +454,176 @@ export const MapView: React.FC<MapViewProps> = ({
     showModerateStops,
     showGoodStops,
     busStops,
+    isZoomSufficient,
   ]);
 
-  // Jump to Preset Area
-  const handleJumpToArea = (coords: number[], zoom: number) => {
-    mapRef.current?.flyTo(coords as [number, number], zoom, { duration: 1.2 });
+  // Jump to Area
+  const handleJumpToCoords = (lat: number, lon: number, zoom = 15) => {
+    mapRef.current?.flyTo([lat, lon], zoom, { duration: 1.2 });
   };
 
-  // Handle Search Input in Floating Bar
-  const handleFloatingSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!floatingSearch.trim()) return;
+  // Query OpenStreetMap Geocoder (Photon by Komoot with CORS & Greater KL spatial bias)
+  const queryGeocoder = async (query: string): Promise<SearchResultItem[]> => {
+    const trimmed = query.trim();
+    if (!trimmed) return [];
 
-    // Check if matches a preset area name
-    const matchArea = POPULAR_AREAS.find((a) =>
-      a.name.toLowerCase().includes(floatingSearch.toLowerCase())
-    );
-    if (matchArea) {
-      handleJumpToArea(matchArea.coords, matchArea.zoom);
+    try {
+      const res = await fetch(
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(
+          trimmed
+        )}&lat=3.1390&lon=101.6869&limit=6`
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.features && Array.isArray(data.features)) {
+          return data.features.map((feat: any, idx: number) => {
+            const p = feat.properties || {};
+            const title = p.name || p.street || p.district || p.city || trimmed;
+            const subtitleParts = [
+              p.street !== title ? p.street : null,
+              p.district !== title ? p.district : null,
+              p.city !== title ? p.city : null,
+              p.state || "Malaysia",
+            ].filter(Boolean);
+
+            const subtitle =
+              subtitleParts.length > 0 ? subtitleParts.join(", ") : "Greater Klang Valley";
+
+            return {
+              id: `place_${p.osm_id || idx}_${idx}`,
+              type: "place" as const,
+              title: title,
+              subtitle: subtitle,
+              coords: [feat.geometry.coordinates[1], feat.geometry.coordinates[0]] as [number, number],
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Photon geocoder error:", err);
+    }
+
+    // Fallback: Check POPULAR_AREAS presets
+    const presetMatches = POPULAR_AREAS.filter((a) =>
+      a.name.toLowerCase().includes(trimmed.toLowerCase())
+    ).map((a) => ({
+      id: `preset_${a.name}`,
+      type: "place" as const,
+      title: a.name,
+      subtitle: "Klang Valley District",
+      coords: [a.coords[0], a.coords[1]] as [number, number],
+    }));
+
+    return presetMatches;
+  };
+
+  // Perform Real-Time Geocoding (Local Bus Stops + OpenStreetMap Geocoder)
+  const handleSearchInputChange = (val: string) => {
+    setFloatingSearch(val);
+    const query = val.trim();
+
+    if (!query) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      setIsSearching(false);
       return;
     }
 
-    // Otherwise pass search to sidebar/filter
-    if (onAreaSearch) {
-      onAreaSearch(floatingSearch);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    setShowDropdown(true);
+
+    // 1. Instant local bus stops matching (stops, codes, councils)
+    const localMatches: SearchResultItem[] = [];
+    if (busStops) {
+      const qLower = query.toLowerCase();
+      for (const feat of busStops.features) {
+        const name = feat.properties.stop_name.toLowerCase();
+        const id = feat.properties.stop_id;
+        const council = feat.properties.council?.toLowerCase() || "";
+        if (name.includes(qLower) || id.includes(qLower) || council.includes(qLower)) {
+          localMatches.push({
+            id: `stop_${feat.properties.stop_id}`,
+            type: "stop",
+            title: feat.properties.stop_name,
+            subtitle: `Bus Stop #${feat.properties.stop_id} • Score: ${feat.properties.quality_score}/9 • ${feat.properties.council}`,
+            coords: [feat.geometry.coordinates[1], feat.geometry.coordinates[0]],
+            stopData: feat.properties,
+          });
+          if (localMatches.length >= 4) break;
+        }
+      }
+    }
+
+    // Immediately present local matches while geocoder request resolves
+    if (localMatches.length > 0) {
+      setSearchResults(localMatches);
+    }
+
+    setIsSearching(true);
+
+    // 2. Debounced OpenStreetMap Geocoder Query
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const geocoded = await queryGeocoder(query);
+        setSearchResults([...localMatches, ...geocoded]);
+      } catch {
+        setSearchResults(localMatches);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+  };
+
+  // Handle Item Click in Search Dropdown
+  const handleSelectSearchResult = (item: SearchResultItem) => {
+    setShowDropdown(false);
+    setFloatingSearch(item.title);
+
+    if (item.type === "stop" && item.stopData) {
+      onSelectStop(item.stopData);
+    } else {
+      handleJumpToCoords(item.coords[0], item.coords[1], 15);
+    }
+  };
+
+  // Submit on Enter
+  const handleSearchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = floatingSearch.trim();
+    if (!query) return;
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // 1. If dropdown already has matching results, jump immediately
+    if (searchResults.length > 0) {
+      handleSelectSearchResult(searchResults[0]);
+      return;
+    }
+
+    // 2. Otherwise execute immediate geocode lookup
+    setIsSearching(true);
+    try {
+      const geocoded = await queryGeocoder(query);
+      setIsSearching(false);
+      if (geocoded.length > 0) {
+        handleSelectSearchResult(geocoded[0]);
+      } else {
+        const matchArea = POPULAR_AREAS.find((a) =>
+          a.name.toLowerCase().includes(query.toLowerCase())
+        );
+        if (matchArea) {
+          handleJumpToCoords(matchArea.coords[0], matchArea.coords[1], matchArea.zoom);
+          setShowDropdown(false);
+        }
+      }
+    } catch {
+      setIsSearching(false);
     }
   };
 
@@ -420,6 +631,21 @@ export const MapView: React.FC<MapViewProps> = ({
     <div className="relative w-full h-full bg-slate-950 overflow-hidden">
       {/* Map Target */}
       <div ref={mapContainerRef} className="w-full h-full z-0" />
+
+      {/* Scale Generalization Helper Pill when zoomed out */}
+      {!isZoomSufficient && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-slate-900/90 backdrop-blur-md border border-slate-700/60 px-4 py-1.5 rounded-full shadow-2xl flex items-center gap-2.5 text-xs text-slate-300 pointer-events-auto transition-all">
+          <ZoomIn className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+          <span>Zoom in or search below to reveal local bus stops</span>
+          <span className="text-slate-600">•</span>
+          <button
+            onClick={() => setForceShowAllPoints(true)}
+            className="text-cyan-400 hover:text-cyan-300 font-semibold underline text-[11px]"
+          >
+            Show All Now
+          </button>
+        </div>
+      )}
 
       {/* Floating Controls: Layer Switcher & Multi-Basemap Switcher */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
@@ -442,8 +668,27 @@ export const MapView: React.FC<MapViewProps> = ({
 
           {showLayerMenu && (
             <div className="absolute right-0 top-full mt-2 w-72 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-2.5 z-30 divide-y divide-slate-800/60 text-xs">
+              {/* Generalization Scale Setting */}
+              <div className="pb-2">
+                <label className="flex items-center justify-between p-1.5 rounded-lg bg-slate-800/40 hover:bg-slate-800 cursor-pointer">
+                  <div className="flex items-center gap-2 text-slate-200">
+                    <ZoomIn className="w-4 h-4 text-cyan-400" />
+                    <div>
+                      <div>Force Show All Points</div>
+                      <div className="text-[10px] text-slate-400">Ignore zoom threshold</div>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={forceShowAllPoints}
+                    onChange={(e) => setForceShowAllPoints(e.target.checked)}
+                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
+                  />
+                </label>
+              </div>
+
               {/* Bus Stop Color Layers */}
-              <div className="pb-2 space-y-1.5">
+              <div className="py-2 space-y-1">
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
                   Bus Stop Layers (By Quality)
                 </div>
@@ -489,7 +734,7 @@ export const MapView: React.FC<MapViewProps> = ({
               </div>
 
               {/* Transit & Boundaries */}
-              <div className="pt-2 space-y-1.5">
+              <div className="pt-2 space-y-1">
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
                   Corridors & Boundaries
                 </div>
@@ -582,23 +827,37 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
       </div>
 
-      {/* Floating Search & Area Quick-Jump Bar at Bottom Center */}
-      {showAreaBar && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-xl bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl p-3 shadow-2xl space-y-2">
+      {/* Floating Search & Real-time OSM Geocoder at Bottom Center */}
+      <div
+        ref={searchContainerRef}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-xl"
+      >
+        <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl p-3 shadow-2xl space-y-2 relative">
           {/* Search Input */}
-          <form onSubmit={handleFloatingSearchSubmit} className="relative flex items-center">
-            <Search className="w-4 h-4 text-cyan-400 absolute left-3 pointer-events-none" />
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+            {isSearching ? (
+              <Loader2 className="w-4 h-4 text-cyan-400 absolute left-3 animate-spin pointer-events-none" />
+            ) : (
+              <Search className="w-4 h-4 text-cyan-400 absolute left-3 pointer-events-none" />
+            )}
             <input
               type="text"
-              placeholder="Search or jump to area in Greater KL (e.g. Bangsar, Cheras, TTDI, KLCC)..."
+              placeholder="Search address, neighborhood or bus stop (e.g. Bangsar, Mont Kiara, KL199)..."
               value={floatingSearch}
-              onChange={(e) => setFloatingSearch(e.target.value)}
-              className="w-full bg-slate-800/70 border border-slate-700/60 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+              onChange={(e) => handleSearchInputChange(e.target.value)}
+              onFocus={() => {
+                if (searchResults.length > 0 || isSearching) setShowDropdown(true);
+              }}
+              className="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             />
             {floatingSearch && (
               <button
                 type="button"
-                onClick={() => setFloatingSearch("")}
+                onClick={() => {
+                  setFloatingSearch("");
+                  setSearchResults([]);
+                  setShowDropdown(false);
+                }}
                 className="absolute right-2.5 text-slate-400 hover:text-white"
               >
                 <X className="w-3.5 h-3.5" />
@@ -606,16 +865,75 @@ export const MapView: React.FC<MapViewProps> = ({
             )}
           </form>
 
+          {/* Autocomplete Suggestions Dropdown (OSM Geocoder + GTFS Bus Stops) */}
+          {showDropdown && (searchResults.length > 0 || isSearching) && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-900/98 backdrop-blur-2xl border border-slate-700 rounded-2xl shadow-2xl overflow-hidden divide-y divide-slate-800 max-h-64 overflow-y-auto z-40">
+              <div className="px-3 py-1.5 bg-slate-800/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Matching Locations & Stops</span>
+                <span className="text-cyan-400 font-normal">OSM Geocoder + GTFS</span>
+              </div>
+
+              {isSearching && searchResults.length === 0 && (
+                <div className="px-4 py-3 flex items-center gap-2 text-xs text-slate-400">
+                  <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+                  <span>Searching OpenStreetMap for &ldquo;{floatingSearch}&rdquo;...</span>
+                </div>
+              )}
+
+              {searchResults.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => handleSelectSearchResult(item)}
+                  className="px-3.5 py-2 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between gap-2.5 transition-colors group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-1.5 rounded-lg bg-slate-800 group-hover:bg-slate-700 text-cyan-400 flex-shrink-0 transition-colors">
+                      {item.type === "stop" ? (
+                        <Bus className="w-3.5 h-3.5 text-amber-400" />
+                      ) : (
+                        <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-white truncate">
+                          {item.title}
+                        </span>
+                        <span
+                          className={`text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase ${
+                            item.type === "stop"
+                              ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                              : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                          }`}
+                        >
+                          {item.type === "stop" ? "Bus Stop" : "Place"}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">
+                        {item.subtitle}
+                      </div>
+                    </div>
+                  </div>
+                  <Navigation className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Quick-Jump Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[10px]">
             <span className="text-slate-400 font-semibold flex items-center gap-1 flex-shrink-0">
               <MapPin className="w-3 h-3 text-cyan-400" />
-              <span>Jump:</span>
+              <span>Presets:</span>
             </span>
             {POPULAR_AREAS.map((area) => (
               <button
                 key={area.name}
-                onClick={() => handleJumpToArea(area.coords, area.zoom)}
+                onClick={() => {
+                  setFloatingSearch(area.name);
+                  setShowDropdown(false);
+                  handleJumpToCoords(area.coords[0], area.coords[1], area.zoom);
+                }}
                 className="px-2.5 py-1 bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg border border-slate-700/60 font-medium transition-colors flex-shrink-0"
               >
                 {area.name}
@@ -623,7 +941,7 @@ export const MapView: React.FC<MapViewProps> = ({
             ))}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Floating Legend */}
       <div className="absolute bottom-6 left-6 z-10 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-2xl p-3 shadow-2xl text-[11px] text-slate-300 space-y-1.5 hidden md:block">
@@ -644,6 +962,9 @@ export const MapView: React.FC<MapViewProps> = ({
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/20" />
             <span>Deficient (&lt;3)</span>
           </div>
+        </div>
+        <div className="pt-1 border-t border-slate-800/80 text-[9px] text-slate-500">
+          {isZoomSufficient ? "● Points visible" : "○ Zoom in (≥14) to view"}
         </div>
       </div>
     </div>

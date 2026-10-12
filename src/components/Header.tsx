@@ -1,11 +1,21 @@
 import React from "react";
-import { Bus, Train, AlertTriangle, CheckCircle, ShieldAlert } from "lucide-react";
+import {
+  Bus,
+  Train,
+  AlertTriangle,
+  CheckCircle,
+  ShieldAlert,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 
 interface HeaderProps {
   totalStops: number;
   deficientCount: number;
   averageScore: number;
   onOpenAdvocacyModal: () => void;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -13,11 +23,30 @@ export const Header: React.FC<HeaderProps> = ({
   deficientCount,
   averageScore,
   onOpenAdvocacyModal,
+  isSidebarOpen = true,
+  onToggleSidebar,
 }) => {
   return (
     <header className="h-16 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-6 flex items-center justify-between z-30 flex-shrink-0">
       {/* Brand & Project Identity */}
       <div className="flex items-center gap-3">
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            title={isSidebarOpen ? "Collapse directory sidebar (maximize map space)" : "Expand directory sidebar"}
+            className={`p-2 rounded-xl border transition-all ${
+              isSidebarOpen
+                ? "bg-slate-800/80 text-cyan-400 border-cyan-500/30 hover:bg-slate-800 shadow-sm"
+                : "bg-slate-800/40 text-slate-300 border-slate-700/60 hover:text-white hover:bg-slate-800 hover:border-cyan-500/50"
+            }`}
+          >
+            {isSidebarOpen ? (
+              <PanelLeftClose className="w-4 h-4" />
+            ) : (
+              <PanelLeftOpen className="w-4 h-4" />
+            )}
+          </button>
+        )}
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
           <Bus className="w-5 h-5 text-white" />
         </div>

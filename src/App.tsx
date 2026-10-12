@@ -10,7 +10,7 @@ import {
   BoundaryGeoJSON,
   BusStopProperties,
 } from "./types";
-import { Loader2 } from "lucide-react";
+import { Loader2, PanelLeftOpen } from "lucide-react";
 
 export function App() {
   const [busStops, setBusStops] = useState<BusStopGeoJSON | null>(null);
@@ -23,6 +23,7 @@ export function App() {
   const [selectedTier, setSelectedTier] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isAdvocacyOpen, setIsAdvocacyOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
   // Load Spatial Data Assets
   useEffect(() => {
@@ -127,6 +128,8 @@ export function App() {
         deficientCount={deficientCount}
         averageScore={averageScore}
         onOpenAdvocacyModal={() => setIsAdvocacyOpen(true)}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
@@ -141,6 +144,8 @@ export function App() {
           selectedStopId={selectedStop?.stop_id || null}
           onSelectStop={handleSelectStopById}
           councils={councils}
+          isOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen(false)}
         />
 
         <main className="flex-1 relative h-full overflow-hidden">
@@ -151,11 +156,27 @@ export function App() {
             selectedStopId={selectedStop?.stop_id || null}
             onSelectStop={(stop) => setSelectedStop(stop)}
             filteredStopsIds={filteredStopsIds}
+            isSidebarOpen={isSidebarOpen}
           />
+
+          {/* Floating Expand Sidebar Button when sidebar is collapsed */}
+          {!isSidebarOpen && (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-slate-900/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 shadow-2xl text-xs font-semibold text-slate-200 hover:text-white hover:border-cyan-500/50 hover:bg-slate-800 transition-all group"
+            >
+              <PanelLeftOpen className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+              <span>Show Stops Directory</span>
+              <span className="text-[10px] bg-slate-800 text-cyan-400 px-1.5 py-0.5 rounded font-mono border border-slate-700/60">
+                {filteredStopsIds.size}
+              </span>
+            </button>
+          )}
 
           <BusStopDrawer
             stop={selectedStop}
             onClose={() => setSelectedStop(null)}
+            isSidebarCollapsed={!isSidebarOpen}
           />
         </main>
       </div>
