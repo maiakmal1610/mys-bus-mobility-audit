@@ -21,39 +21,65 @@ ADM2_INPUT = Path("C:/Users/DataMicron/Desktop/kri/data/boundaries/geoBoundaries
 KRI_CSV_URL = "https://raw.githubusercontent.com/KRI-Data/GKLMOB-anatomy-of-busstops/main/busstop_quality_with_coordinates.csv"
 
 def extract_kl_boundary():
-    print("1. Extracting Kuala Lumpur, Selangor, and Putrajaya boundaries...")
-    target_names = {"kuala lumpur", "selangor", "putrajaya"}
+    print("1. Extracting Kuala Lumpur, Putrajaya, and 9 Selangor District boundaries...")
+    selangor_districts = {
+        "petaling": {"name": "Daerah Petaling", "councils": "MBPJ, MBSA, MBSJ (Petaling Jaya, Shah Alam, Subang Jaya)"},
+        "gombak": {"name": "Daerah Gombak", "councils": "MPS, MPAJ (Selayang, Rawang, Batu Caves)"},
+        "ulu langat": {"name": "Daerah Hulu Langat", "councils": "MPKj, MPAJ (Kajang, Ampang, Cheras, Bangi)"},
+        "klang": {"name": "Daerah Klang", "councils": "MBDK (Klang, Port Klang, Kapar)"},
+        "sepang": {"name": "Daerah Sepang", "councils": "MP Sepang (Cyberjaya, KLIA, Dengkil)"},
+        "kuala langat": {"name": "Daerah Kuala Langat", "councils": "MPKL (Banting, Telok Panglima Garang)"},
+        "kuala selangor": {"name": "Daerah Kuala Selangor", "councils": "MPKS (Kuala Selangor, Ijok)"},
+        "ulu selangor": {"name": "Daerah Hulu Selangor", "councils": "MPHS (Kuala Kubu Bharu, Serendah)"},
+        "sabak bernam": {"name": "Daerah Sabak Bernam", "councils": "MDSB (Sabak Bernam, Sungai Besar)"},
+    }
+
     features = []
 
-    # Try ADM1 first for state boundaries
-    if ADM1_INPUT.exists():
-        with open(ADM1_INPUT, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        for feat in data["features"]:
-            name = feat["properties"].get("shapeName", "").strip()
-            if name.lower() in target_names:
-                feat["properties"]["displayName"] = name
+    # 1. Load ADM2 for Kuala Lumpur & individual Selangor Districts
+    if ADM2_INPUT.exists():
+        with open(ADM2_INPUT, "r", encoding="utf-8") as f:
+            adm2_data = json.load(f)
+        for feat in adm2_data["features"]:
+            raw_name = feat["properties"].get("shapeName", "").strip()
+            nl = raw_name.lower()
+            if nl == "kuala lumpur":
+                feat["properties"]["displayName"] = "Dewan Bandaraya Kuala Lumpur (DBKL)"
+                feat["properties"]["category"] = "kuala_lumpur"
+                feat["properties"]["jurisdiction"] = "Federal Territory / DBKL"
+                features.append(feat)
+            elif nl in selangor_districts:
+                meta = selangor_districts[nl]
+                feat["properties"]["displayName"] = meta["name"]
+                feat["properties"]["category"] = "selangor_district"
+                feat["properties"]["jurisdiction"] = f"Selangor • {meta['councils']}"
                 features.append(feat)
 
-    # Fallback to ADM2 if needed
-    if not features and ADM2_INPUT.exists():
-        with open(ADM2_INPUT, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        for feat in data["features"]:
-            name = feat["properties"].get("shapeName", "").strip()
-            if name.lower() in target_names:
-                feat["properties"]["displayName"] = name
+    # 2. Load ADM1 for Putrajaya
+    if ADM1_INPUT.exists():
+        with open(ADM1_INPUT, "r", encoding="utf-8") as f:
+            adm1_data = json.load(f)
+        for feat in adm1_data["features"]:
+            raw_name = feat["properties"].get("shapeName", "").strip()
+            if raw_name.lower() == "putrajaya":
+                feat["properties"]["displayName"] = "Perbadanan Putrajaya"
+                feat["properties"]["category"] = "putrajaya"
+                feat["properties"]["jurisdiction"] = "Federal Territory / Putrajaya"
                 features.append(feat)
 
     out_boundary = {
         "type": "FeatureCollection",
+        "metadata": {
+            "title": "Kuala Lumpur, Putrajaya & Selangor District Boundaries",
+            "total_districts": len(features)
+        },
         "features": features
     }
 
     out_path = OUTPUT_DIR / "kl_boundary.geojson"
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out_boundary, f, ensure_ascii=False)
-    print(f"   Saved boundaries: {out_path} ({len(features)} features: KL, Selangor, Putrajaya)")
+    print(f"   Saved boundaries: {out_path} ({len(features)} features: KL, Putrajaya, 9 Selangor Districts)")
 
 def extract_bus_stops():
     print("2. Downloading & processing KRI bus stop detection dataset...")

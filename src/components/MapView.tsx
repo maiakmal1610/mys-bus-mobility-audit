@@ -260,7 +260,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }
   }, [activeBasemapId]);
 
-  // 3. Render KL, Selangor, & Putrajaya Boundaries
+  // 3. Render KL, Selangor Districts, & Putrajaya Boundaries
   useEffect(() => {
     if (!mapRef.current) return;
     if (boundaryLayerRef.current) {
@@ -272,50 +272,74 @@ export const MapView: React.FC<MapViewProps> = ({
 
     const boundary = L.geoJSON(klBoundary, {
       filter: (feature) => {
-        const name = feature?.properties?.shapeName?.toLowerCase() || "";
-        if (name.includes("kuala lumpur")) {
+        const cat = feature?.properties?.category;
+        const name = (feature?.properties?.displayName || feature?.properties?.shapeName || "").toLowerCase();
+        if (cat === "kuala_lumpur" || name.includes("kuala lumpur")) {
           return showKlBoundary;
         }
         return showSelangorBoundary;
       },
       style: (feature) => {
-        const name = feature?.properties?.shapeName?.toLowerCase() || "";
-        if (name.includes("kuala lumpur")) {
+        const cat = feature?.properties?.category;
+        const name = (feature?.properties?.displayName || feature?.properties?.shapeName || "").toLowerCase();
+
+        if (cat === "kuala_lumpur" || name.includes("kuala lumpur")) {
           return {
-            color: "#0369a1", // Bold deep blue border
+            color: "#0284c7", // Bold deep cyan/blue DBKL border
             weight: 3.5,
             opacity: 1,
             fillColor: "#0284c7",
             fillOpacity: 0.08,
           };
-        } else if (name.includes("putrajaya")) {
+        } else if (cat === "putrajaya" || name.includes("putrajaya")) {
           return {
-            color: "#4f46e5", // Indigo
+            color: "#6366f1", // Indigo Putrajaya boundary
             weight: 3,
             opacity: 0.95,
             fillColor: "#6366f1",
             fillOpacity: 0.08,
           };
         } else {
+          // Selangor District (Petaling, Gombak, Hulu Langat, Klang, Sepang, etc.)
           return {
-            color: "#334155", // Slate dark stroke
-            weight: 2.5,
-            dashArray: "6, 6",
+            color: "#0ea5e9", // Vivid cyan district perimeter
+            weight: 2,
+            dashArray: "5, 5",
             opacity: 0.85,
-            fillColor: "#64748b",
-            fillOpacity: 0.03,
+            fillColor: "#38bdf8",
+            fillOpacity: 0.04,
           };
         }
       },
       onEachFeature: (feature, layer) => {
-        const name = feature?.properties?.displayName || feature?.properties?.shapeName || "Boundary";
+        const name = feature?.properties?.displayName || feature?.properties?.shapeName || "District";
+        const jurisdiction = feature?.properties?.jurisdiction || "Administrative Boundary";
+        const isSelangor = feature?.properties?.category === "selangor_district";
+
         layer.bindTooltip(
-          `<div style="font-family:Inter,sans-serif;font-size:11px;">
-            <strong>${name}</strong><br/>
-            <span style="color:#64748b;font-size:10px;">Administrative Boundary</span>
+          `<div style="font-family:Inter,sans-serif;font-size:11px;padding:2px 4px;">
+            <div style="font-weight:700;color:#f8fafc;font-size:12px;">${name}</div>
+            <div style="color:#94a3b8;font-size:10px;margin-top:2px;">${jurisdiction}</div>
+            ${
+              isSelangor
+                ? '<div style="color:#38bdf8;font-size:9px;margin-top:3px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Selangor Administrative District</div>'
+                : ""
+            }
           </div>`,
           { className: "custom-transit-tooltip", sticky: true }
         );
+
+        // Interactive hover highlight
+        layer.on("mouseover", () => {
+          (layer as L.Path).setStyle({
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 0.12,
+          });
+        });
+        layer.on("mouseout", () => {
+          boundary.resetStyle(layer as L.Path);
+        });
       },
     }).addTo(mapRef.current);
 
@@ -767,8 +791,11 @@ export const MapView: React.FC<MapViewProps> = ({
 
                 <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
                   <div className="flex items-center gap-2 text-xs text-slate-200">
-                    <MapIcon className="w-4 h-4 text-indigo-400" />
-                    <span>Selangor & Putrajaya</span>
+                    <MapIcon className="w-4 h-4 text-cyan-400" />
+                    <div>
+                      <div>Selangor Districts & Putrajaya</div>
+                      <div className="text-[10px] text-slate-400">9 Administrative Districts (Daerah)</div>
+                    </div>
                   </div>
                   <input
                     type="checkbox"
