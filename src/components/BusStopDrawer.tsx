@@ -27,7 +27,6 @@ export const BusStopDrawer: React.FC<BusStopDrawerProps> = ({
 }) => {
   const [rating, setRating] = useState<number>(3);
   const [comment, setComment] = useState<string>("");
-  const [submitted, setSubmitted] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [audits, setAudits] = useState<AuditReport[]>([]);
 
@@ -35,7 +34,6 @@ export const BusStopDrawer: React.FC<BusStopDrawerProps> = ({
     if (stop) {
       const all = getLocalAudits();
       setAudits(all[stop.stop_id] || []);
-      setSubmitted(false);
       setComment("");
       setRating(Math.min(5, Math.max(1, Math.round(stop.quality_score / 2))));
     }
@@ -56,7 +54,6 @@ export const BusStopDrawer: React.FC<BusStopDrawerProps> = ({
 
     const all = getLocalAudits();
     setAudits(all[stop.stop_id] || []);
-    setSubmitted(true);
     setComment("");
     if (onReportSubmitted) onReportSubmitted();
   };
@@ -84,13 +81,13 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
   };
 
   return (
-    <div className="absolute top-4 left-4 z-20 w-88 max-h-[calc(100vh-2rem)] bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 text-xs text-slate-200">
+    <div className="absolute top-4 left-4 z-20 w-80 max-h-[380px] bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 text-xs text-slate-200">
       {/* Pinned Header */}
       <div className="px-4 py-3 border-b border-slate-800/80 bg-slate-800/50 flex items-center justify-between flex-shrink-0">
         <div className="min-w-0 pr-2">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase tracking-wider">
-              {stop.council}
+            <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 uppercase tracking-wider">
+              {stop.council.split(" ")[0]}
             </span>
             <span className="text-[10px] text-slate-400 font-mono">#{stop.stop_id}</span>
           </div>
@@ -108,10 +105,10 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
       </div>
 
       {/* Scrollable Content */}
-      <div className="p-4 space-y-4 overflow-y-auto flex-1">
+      <div className="p-4 space-y-3.5 overflow-y-auto flex-1">
         {/* Quality Score Hero Card */}
         <div
-          className="p-3.5 rounded-xl border flex items-center justify-between"
+          className="p-3 rounded-xl border flex items-center justify-between"
           style={{
             borderColor: `${stop.color}40`,
             backgroundColor: `${stop.color}10`,
@@ -119,22 +116,22 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
         >
           <div>
             <div className="text-[10px] uppercase font-semibold text-slate-400">
-              KRI Infrastructure Score
+              Infrastructure Quality Metric
             </div>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-3xl font-extrabold text-white font-mono">
                 {stop.quality_score.toFixed(0)}
               </span>
-              <span className="text-xs text-slate-400 font-medium">/ 9 elements</span>
+              <span className="text-[11px] text-slate-400 font-medium">/ 9 elements</span>
             </div>
-            <div className="text-[11px] font-semibold mt-1" style={{ color: stop.color }}>
+            <div className="text-[10px] font-semibold mt-1" style={{ color: stop.color }}>
               {stop.tier}
             </div>
           </div>
 
           <div className="flex flex-col items-end">
             <span
-              className="text-[10px] font-bold px-2 py-1 rounded-full uppercase"
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase"
               style={{
                 backgroundColor: `${stop.color}20`,
                 color: stop.color,
@@ -146,27 +143,27 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
           </div>
         </div>
 
-        {/* Physical Infrastructure Checklist (KRI YOLOv8 Detected) */}
+        {/* Physical Infrastructure Checklist */}
         <div className="bg-slate-800/40 border border-slate-800 p-3 rounded-xl space-y-2">
           <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-            <span>Detected Amenities</span>
+            <span>Physical Amenities</span>
             <span className="text-[9px] text-slate-500 font-normal">AI Ground Truth</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div className="grid grid-cols-2 gap-1.5 text-[11px]">
             <div
-              className={`p-2 rounded-lg flex items-center justify-between ${
+              className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.shelter
                   ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
                   : "bg-red-500/10 text-red-400 border border-red-500/20"
               }`}
             >
               <span>☔ Rain Shelter</span>
-              <span>{stop.amenities.shelter ? "Yes" : "Missing"}</span>
+              <span>{stop.amenities.shelter ? "Yes" : "No"}</span>
             </div>
 
             <div
-              className={`p-2 rounded-lg flex items-center justify-between ${
+              className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.street_light
                   ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
                   : "bg-red-500/10 text-red-400 border border-red-500/20"
@@ -177,55 +174,54 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
             </div>
 
             <div
-              className={`p-2 rounded-lg flex items-center justify-between ${
+              className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.bench
                   ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
                   : "bg-slate-800/60 text-slate-500"
               }`}
             >
-              <span>🪑 Seating Bench</span>
+              <span>🪑 Bench</span>
               <span>{stop.amenities.bench ? "Yes" : "No"}</span>
             </div>
 
             <div
-              className={`p-2 rounded-lg flex items-center justify-between ${
+              className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.zebra_crossing
                   ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
                   : "bg-slate-800/60 text-slate-500"
               }`}
             >
-              <span>🚸 Zebra Cross</span>
+              <span>🚸 Crossing</span>
               <span>{stop.amenities.zebra_crossing ? "Yes" : "No"}</span>
             </div>
           </div>
         </div>
 
         {/* Crowdsourced Community Audit & Rating */}
-        <div className="bg-slate-800/40 border border-slate-800 p-3.5 rounded-xl space-y-3">
+        <div className="bg-slate-800/40 border border-slate-800 p-3 rounded-xl space-y-2.5">
           <div className="flex items-center justify-between">
             <h3 className="text-[11px] font-bold text-white flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
+              <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
               <span>Crowdsource Stop Audit</span>
             </h3>
-            <span className="text-[10px] text-amber-400 font-semibold">
+            <span className="text-[10px] text-cyan-400 font-semibold">
               {audits.length} Reports
             </span>
           </div>
 
-          <form onSubmit={handleSubmitAudit} className="space-y-2.5">
-            {/* 1-5 Star Rating */}
+          <form onSubmit={handleSubmitAudit} className="space-y-2">
             <div>
-              <div className="text-[10px] text-slate-400 mb-1">Your Condition Rating:</div>
-              <div className="flex items-center gap-1.5">
+              <div className="text-[10px] text-slate-400 mb-1">Rate Real Condition:</div>
+              <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     type="button"
                     key={star}
                     onClick={() => setRating(star)}
-                    className="p-1 hover:scale-110 transition-transform"
+                    className="p-0.5 hover:scale-110 transition-transform"
                   >
                     <Star
-                      className={`w-4 h-4 ${
+                      className={`w-3.5 h-3.5 ${
                         star <= rating
                           ? "text-amber-400 fill-amber-400"
                           : "text-slate-600"
@@ -236,38 +232,36 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
               </div>
             </div>
 
-            {/* Comment Box */}
             <div>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Share ground reality (e.g., roof broken, dark at night, no pavement)..."
+                placeholder="Share ground reality (e.g., roof broken, unlit at night)..."
                 rows={2}
-                className="w-full bg-slate-900 border border-slate-700/70 rounded-lg p-2 text-white placeholder-slate-500 text-[11px] focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="w-full bg-slate-900 border border-slate-700/60 rounded-lg p-2 text-white placeholder-slate-500 text-[11px] focus:outline-none focus:ring-1 focus:ring-cyan-500"
               />
             </div>
 
             <button
               type="submit"
               disabled={!comment.trim()}
-              className="w-full py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-black font-semibold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
+              className="w-full py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-40 text-white font-semibold rounded-lg text-[11px] transition-all flex items-center justify-center gap-1.5"
             >
-              <Send className="w-3.5 h-3.5" />
+              <Send className="w-3 h-3" />
               <span>Submit Community Audit</span>
             </button>
           </form>
 
-          {/* Past Community Reviews */}
           {audits.length > 0 && (
-            <div className="pt-2 border-t border-slate-800 space-y-2">
+            <div className="pt-2 border-t border-slate-800 space-y-1.5">
               <div className="text-[10px] text-slate-400 font-semibold">
                 Recent Commuter Notes:
               </div>
-              <div className="space-y-1.5 max-h-28 overflow-y-auto">
+              <div className="space-y-1 max-h-24 overflow-y-auto">
                 {audits.slice(0, 3).map((a, idx) => (
                   <div
                     key={idx}
-                    className="p-2 rounded bg-slate-900/60 border border-slate-800 text-[10px]"
+                    className="p-1.5 rounded bg-slate-900/60 border border-slate-800 text-[10px]"
                   >
                     <div className="flex items-center justify-between text-slate-400 mb-0.5">
                       <span className="text-amber-400 font-mono">
@@ -286,19 +280,19 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
           )}
         </div>
 
-        {/* Civic Call-to-Action: Generate Complaint Slip */}
+        {/* Civic Call-to-Action */}
         <button
           onClick={handleCopyComplaintSlip}
-          className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+          className="w-full py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
         >
           {copied ? (
             <>
-              <Check className="w-4 h-4 text-emerald-400" />
-              <span className="text-emerald-400">Copied to Clipboard!</span>
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-emerald-400">Copied Complaint Slip!</span>
             </>
           ) : (
             <>
-              <Copy className="w-4 h-4 text-amber-400" />
+              <Copy className="w-3.5 h-3.5 text-cyan-400" />
               <span>Copy Council Complaint Slip</span>
             </>
           )}
