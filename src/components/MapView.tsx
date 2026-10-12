@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import { Layers, Train, Bus, Check, SlidersHorizontal, Map as MapIcon } from "lucide-react";
+import {
+  Layers,
+  Train,
+  Bus,
+  Check,
+  SlidersHorizontal,
+  Map as MapIcon,
+  Search,
+  MapPin,
+  X,
+} from "lucide-react";
 import {
   BusStopProperties,
   BusStopGeoJSON,
@@ -15,6 +25,7 @@ interface MapViewProps {
   selectedStopId: string | null;
   onSelectStop: (stop: BusStopProperties) => void;
   filteredStopsIds: Set<string>;
+  onAreaSearch?: (query: string) => void;
 }
 
 interface BasemapOption {
@@ -102,6 +113,18 @@ const BASEMAP_OPTIONS: BasemapOption[] = [
   },
 ];
 
+// Quick Area Presets for Floating Search
+const POPULAR_AREAS = [
+  { name: "KLCC / City", coords: [3.1578, 101.7118], zoom: 15 },
+  { name: "Bukit Bintang", coords: [3.1466, 101.711], zoom: 15 },
+  { name: "Bangsar", coords: [3.1292, 101.6705], zoom: 15 },
+  { name: "Cheras", coords: [3.1068, 101.7258], zoom: 14 },
+  { name: "Petaling Jaya", coords: [3.1189, 101.6214], zoom: 14 },
+  { name: "Subang Jaya", coords: [3.076, 101.5878], zoom: 14 },
+  { name: "Shah Alam", coords: [3.0738, 101.5183], zoom: 14 },
+  { name: "Putrajaya", coords: [2.9264, 101.6964], zoom: 14 },
+];
+
 export const MapView: React.FC<MapViewProps> = ({
   busStops,
   railLines,
@@ -109,6 +132,7 @@ export const MapView: React.FC<MapViewProps> = ({
   selectedStopId,
   onSelectStop,
   filteredStopsIds,
+  onAreaSearch,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -126,9 +150,17 @@ export const MapView: React.FC<MapViewProps> = ({
 
   // Layer Toggles
   const [showRailLines, setShowRailLines] = useState<boolean>(true);
-  const [showBusStops, setShowBusStops] = useState<boolean>(true);
   const [showKlBoundary, setShowKlBoundary] = useState<boolean>(true);
   const [showSelangorBoundary, setShowSelangorBoundary] = useState<boolean>(true);
+
+  // Independent Bus Stop Quality Color Layers
+  const [showDeficientStops, setShowDeficientStops] = useState<boolean>(true); // Red (<3)
+  const [showModerateStops, setShowModerateStops] = useState<boolean>(true); // Amber (3-5)
+  const [showGoodStops, setShowGoodStops] = useState<boolean>(true); // Green (≥6)
+
+  // Floating Area Search State
+  const [floatingSearch, setFloatingSearch] = useState<string>("");
+  const [showAreaBar, setShowAreaBar] = useState<boolean>(true);
 
   const activeBasemap = BASEMAP_OPTIONS.find((b) => b.id === activeBasemapId) || BASEMAP_OPTIONS[0];
 
@@ -193,16 +225,14 @@ export const MapView: React.FC<MapViewProps> = ({
       style: (feature) => {
         const name = feature?.properties?.shapeName?.toLowerCase() || "";
         if (name.includes("kuala lumpur")) {
-          // KL City Boundary: prominent, darker, bold border
           return {
-            color: "#0369a1", // Dark blue border
+            color: "#0369a1", // Deep crisp sky blue bold border
             weight: 3.5,
             opacity: 1,
             fillColor: "#0284c7",
             fillOpacity: 0.08,
           };
         } else if (name.includes("putrajaya")) {
-          // Putrajaya Boundary
           return {
             color: "#4f46e5", // Indigo
             weight: 3,
@@ -211,7 +241,6 @@ export const MapView: React.FC<MapViewProps> = ({
             fillOpacity: 0.08,
           };
         } else {
-          // Selangor Boundary
           return {
             color: "#334155", // Slate dark stroke
             weight: 2.5,
@@ -221,16 +250,6 @@ export const MapView: React.FC<MapViewProps> = ({
             fillOpacity: 0.03,
           };
         }
-      },
-      onEachFeature: (feature, layer) => {
-        const name = feature?.properties?.displayName || feature?.properties?.shapeName || "Boundary";
-        layer.bindTooltip(
-          `<div style="font-family:Inter,sans-serif;font-size:11px;">
-            <strong>${name}</strong><br/>
-            <span style="color:#64748b;font-size:10px;">Administrative Boundary</span>
-          </div>`,
-          { className: "custom-transit-tooltip", sticky: true }
-        );
       },
     }).addTo(mapRef.current);
 
@@ -256,23 +275,12 @@ export const MapView: React.FC<MapViewProps> = ({
           opacity: 0.85,
         };
       },
-      onEachFeature: (feature, layer) => {
-        const name = feature.properties?.name || "Rail Line";
-        const mode = feature.properties?.mode || "Transit";
-        layer.bindTooltip(
-          `<strong>${name}</strong><br/><span style="font-size:10px;color:#94a3b8;">${mode}</span>`,
-          {
-            className: "custom-transit-tooltip",
-            sticky: true,
-          }
-        );
-      },
     }).addTo(mapRef.current);
 
     railLayerRef.current = rail;
   }, [railLines, showRailLines]);
 
-  // 5. Create Bus Stop Markers ONCE (No flashing DOM rebuilds!)
+  // 5. Create Bus Stop Markers ONCE (Tooltips DISABLED on hover per instructions)
   useEffect(() => {
     if (!mapRef.current || !busStops) return;
 
@@ -295,18 +303,7 @@ export const MapView: React.FC<MapViewProps> = ({
         fillOpacity: 0.65,
       });
 
-      circle.bindTooltip(
-        `<div style="font-family:Inter,sans-serif;font-size:11px;">
-          <strong>${props.stop_name}</strong><br/>
-          <span style="color:#0284c7;">Quality: ${props.quality_score.toFixed(0)}/9</span> • <span style="color:#64748b;">${props.council}</span>
-        </div>`,
-        {
-          className: "custom-transit-tooltip",
-          direction: "top",
-          offset: [0, -6],
-        }
-      );
-
+      // Hover popups disabled completely for distraction-free navigation
       circle.on("click", (e) => {
         L.DomEvent.stopPropagation(e);
         onSelectStop(props);
@@ -317,14 +314,14 @@ export const MapView: React.FC<MapViewProps> = ({
     });
   }, [busStops]);
 
-  // 6. Smooth Style Update & Smooth FlyTo (Rock-solid, NO flashing)
+  // 6. Smooth Style Update & Separate Color Tier Toggles (No flashing DOM churn)
   useEffect(() => {
-    if (!markersMapRef.current.size) return;
+    if (!markersMapRef.current.size || !busStops) return;
 
     // Reset previous selected marker style
     if (prevSelectedIdRef.current && prevSelectedIdRef.current !== selectedStopId) {
       const prevMarker = markersMapRef.current.get(prevSelectedIdRef.current);
-      if (prevMarker && busStops) {
+      if (prevMarker) {
         const feat = busStops.features.find((f) => f.properties.stop_id === prevSelectedIdRef.current);
         const col = feat?.properties.color || "#0284c7";
         prevMarker.setStyle({
@@ -356,9 +353,19 @@ export const MapView: React.FC<MapViewProps> = ({
     }
     prevSelectedIdRef.current = selectedStopId;
 
-    // Filter visibility by updating opacity without destroying DOM nodes
-    markersMapRef.current.forEach((marker, stopId) => {
-      const isVisible = showBusStops && filteredStopsIds.has(stopId);
+    // Filter visibility by quality score color layer
+    busStops.features.forEach((feat) => {
+      const stopId = feat.properties.stop_id;
+      const score = feat.properties.quality_score;
+      const marker = markersMapRef.current.get(stopId);
+      if (!marker) return;
+
+      const isTierActive =
+        (score < 3 && showDeficientStops) ||
+        (score >= 3 && score < 6 && showModerateStops) ||
+        (score >= 6 && showGoodStops);
+
+      const isVisible = isTierActive && filteredStopsIds.has(stopId);
       const isSelected = stopId === selectedStopId;
 
       if (isVisible) {
@@ -375,7 +382,39 @@ export const MapView: React.FC<MapViewProps> = ({
         });
       }
     });
-  }, [filteredStopsIds, selectedStopId, showBusStops, busStops]);
+  }, [
+    filteredStopsIds,
+    selectedStopId,
+    showDeficientStops,
+    showModerateStops,
+    showGoodStops,
+    busStops,
+  ]);
+
+  // Jump to Preset Area
+  const handleJumpToArea = (coords: number[], zoom: number) => {
+    mapRef.current?.flyTo(coords as [number, number], zoom, { duration: 1.2 });
+  };
+
+  // Handle Search Input in Floating Bar
+  const handleFloatingSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!floatingSearch.trim()) return;
+
+    // Check if matches a preset area name
+    const matchArea = POPULAR_AREAS.find((a) =>
+      a.name.toLowerCase().includes(floatingSearch.toLowerCase())
+    );
+    if (matchArea) {
+      handleJumpToArea(matchArea.coords, matchArea.zoom);
+      return;
+    }
+
+    // Otherwise pass search to sidebar/filter
+    if (onAreaSearch) {
+      onAreaSearch(floatingSearch);
+    }
+  };
 
   return (
     <div className="relative w-full h-full bg-slate-950 overflow-hidden">
@@ -402,14 +441,73 @@ export const MapView: React.FC<MapViewProps> = ({
           </button>
 
           {showLayerMenu && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-2 z-30 divide-y divide-slate-800/60">
-              <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Toggle Map Layers
+            <div className="absolute right-0 top-full mt-2 w-72 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-2.5 z-30 divide-y divide-slate-800/60 text-xs">
+              {/* Bus Stop Color Layers */}
+              <div className="pb-2 space-y-1.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                  Bus Stop Layers (By Quality)
+                </div>
+
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/30 flex-shrink-0" />
+                    <span className="text-slate-200 text-xs">Critical Deficit (&lt;3)</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={showDeficientStops}
+                    onChange={(e) => setShowDeficientStops(e.target.checked)}
+                    className="rounded border-slate-700 text-red-500 focus:ring-red-500 w-4 h-4 accent-red-500"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-amber-500 shadow-sm shadow-amber-500/30 flex-shrink-0" />
+                    <span className="text-slate-200 text-xs">Moderate Quality (3-5)</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={showModerateStops}
+                    onChange={(e) => setShowModerateStops(e.target.checked)}
+                    className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 accent-amber-500"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/30 flex-shrink-0" />
+                    <span className="text-slate-200 text-xs">Good Quality (≥6)</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={showGoodStops}
+                    onChange={(e) => setShowGoodStops(e.target.checked)}
+                    className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500 w-4 h-4 accent-emerald-500"
+                  />
+                </label>
               </div>
 
-              <div className="py-1 space-y-1">
-                {/* KL Boundary Toggle */}
-                <label className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 cursor-pointer transition-colors">
+              {/* Transit & Boundaries */}
+              <div className="pt-2 space-y-1.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+                  Corridors & Boundaries
+                </div>
+
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                  <div className="flex items-center gap-2 text-xs text-slate-200">
+                    <Train className="w-4 h-4 text-rose-400" />
+                    <span>Rail Corridors (MRT/LRT)</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={showRailLines}
+                    onChange={(e) => setShowRailLines(e.target.checked)}
+                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
                   <div className="flex items-center gap-2 text-xs text-slate-200">
                     <MapIcon className="w-4 h-4 text-sky-400" />
                     <span>KL City Boundary (DBKL)</span>
@@ -422,8 +520,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   />
                 </label>
 
-                {/* Selangor & Putrajaya Boundary Toggle */}
-                <label className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 cursor-pointer transition-colors">
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
                   <div className="flex items-center gap-2 text-xs text-slate-200">
                     <MapIcon className="w-4 h-4 text-indigo-400" />
                     <span>Selangor & Putrajaya</span>
@@ -432,34 +529,6 @@ export const MapView: React.FC<MapViewProps> = ({
                     type="checkbox"
                     checked={showSelangorBoundary}
                     onChange={(e) => setShowSelangorBoundary(e.target.checked)}
-                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
-                  />
-                </label>
-
-                {/* Rail Lines Toggle */}
-                <label className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 cursor-pointer transition-colors">
-                  <div className="flex items-center gap-2 text-xs text-slate-200">
-                    <Train className="w-4 h-4 text-red-400" />
-                    <span>Rail Corridors (MRT/LRT)</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={showRailLines}
-                    onChange={(e) => setShowRailLines(e.target.checked)}
-                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
-                  />
-                </label>
-
-                {/* Bus Stops Toggle */}
-                <label className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/60 cursor-pointer transition-colors">
-                  <div className="flex items-center gap-2 text-xs text-slate-200">
-                    <Bus className="w-4 h-4 text-cyan-400" />
-                    <span>Bus Stop Points</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={showBusStops}
-                    onChange={(e) => setShowBusStops(e.target.checked)}
                     className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
                   />
                 </label>
@@ -513,22 +582,65 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
       </div>
 
-      {/* Floating Legend */}
-      <div className="absolute bottom-6 left-6 z-10 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-2xl p-3.5 shadow-2xl text-[11px] text-slate-300 space-y-2">
-        <div className="font-semibold text-white flex items-center gap-1.5">
-          <Bus className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Bus Stop Quality (KRI Score)</span>
+      {/* Floating Search & Area Quick-Jump Bar at Bottom Center */}
+      {showAreaBar && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-xl bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl p-3 shadow-2xl space-y-2">
+          {/* Search Input */}
+          <form onSubmit={handleFloatingSearchSubmit} className="relative flex items-center">
+            <Search className="w-4 h-4 text-cyan-400 absolute left-3 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search or jump to area in Greater KL (e.g. Bangsar, Cheras, TTDI, KLCC)..."
+              value={floatingSearch}
+              onChange={(e) => setFloatingSearch(e.target.value)}
+              className="w-full bg-slate-800/70 border border-slate-700/60 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+            />
+            {floatingSearch && (
+              <button
+                type="button"
+                onClick={() => setFloatingSearch("")}
+                className="absolute right-2.5 text-slate-400 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </form>
+
+          {/* Quick-Jump Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[10px]">
+            <span className="text-slate-400 font-semibold flex items-center gap-1 flex-shrink-0">
+              <MapPin className="w-3 h-3 text-cyan-400" />
+              <span>Jump:</span>
+            </span>
+            {POPULAR_AREAS.map((area) => (
+              <button
+                key={area.name}
+                onClick={() => handleJumpToArea(area.coords, area.zoom)}
+                className="px-2.5 py-1 bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg border border-slate-700/60 font-medium transition-colors flex-shrink-0"
+              >
+                {area.name}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-3 text-[10px]">
-          <div className="flex items-center gap-1.5">
+      )}
+
+      {/* Floating Legend */}
+      <div className="absolute bottom-6 left-6 z-10 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-2xl p-3 shadow-2xl text-[11px] text-slate-300 space-y-1.5 hidden md:block">
+        <div className="font-semibold text-white flex items-center gap-1.5 text-xs">
+          <Bus className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Quality Legend</span>
+        </div>
+        <div className="space-y-1 text-[10px]">
+          <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/20" />
             <span>Good (≥6)</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/20" />
             <span>Moderate (3-5)</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/20" />
             <span>Deficient (&lt;3)</span>
           </div>
