@@ -23,7 +23,7 @@ export function App() {
   const [selectedTier, setSelectedTier] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isAdvocacyOpen, setIsAdvocacyOpen] = useState<boolean>(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   // Load Spatial Data Assets
   useEffect(() => {

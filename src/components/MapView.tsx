@@ -271,6 +271,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!klBoundary) return;
 
     const boundary = L.geoJSON(klBoundary, {
+      interactive: false,
       filter: (feature) => {
         const cat = feature?.properties?.category;
         const name = (feature?.properties?.displayName || feature?.properties?.shapeName || "").toLowerCase();
@@ -290,6 +291,7 @@ export const MapView: React.FC<MapViewProps> = ({
             opacity: 1,
             fillColor: "#0284c7",
             fillOpacity: 0.08,
+            interactive: false,
           };
         } else if (cat === "putrajaya" || name.includes("putrajaya")) {
           return {
@@ -298,6 +300,7 @@ export const MapView: React.FC<MapViewProps> = ({
             opacity: 0.95,
             fillColor: "#6366f1",
             fillOpacity: 0.08,
+            interactive: false,
           };
         } else {
           // Selangor District (Petaling, Gombak, Hulu Langat, Klang, Sepang, etc.)
@@ -308,38 +311,9 @@ export const MapView: React.FC<MapViewProps> = ({
             opacity: 0.85,
             fillColor: "#38bdf8",
             fillOpacity: 0.04,
+            interactive: false,
           };
         }
-      },
-      onEachFeature: (feature, layer) => {
-        const name = feature?.properties?.displayName || feature?.properties?.shapeName || "District";
-        const jurisdiction = feature?.properties?.jurisdiction || "Administrative Boundary";
-        const isSelangor = feature?.properties?.category === "selangor_district";
-
-        layer.bindTooltip(
-          `<div style="font-family:Inter,sans-serif;font-size:11px;padding:2px 4px;">
-            <div style="font-weight:700;color:#f8fafc;font-size:12px;">${name}</div>
-            <div style="color:#94a3b8;font-size:10px;margin-top:2px;">${jurisdiction}</div>
-            ${
-              isSelangor
-                ? '<div style="color:#38bdf8;font-size:9px;margin-top:3px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Selangor Administrative District</div>'
-                : ""
-            }
-          </div>`,
-          { className: "custom-transit-tooltip", sticky: true }
-        );
-
-        // Interactive hover highlight
-        layer.on("mouseover", () => {
-          (layer as L.Path).setStyle({
-            weight: 3,
-            opacity: 1,
-            fillOpacity: 0.12,
-          });
-        });
-        layer.on("mouseout", () => {
-          boundary.resetStyle(layer as L.Path);
-        });
       },
     }).addTo(mapRef.current);
 
@@ -894,16 +868,21 @@ export const MapView: React.FC<MapViewProps> = ({
 
           {/* Autocomplete Suggestions Dropdown (OSM Geocoder + GTFS Bus Stops) */}
           {showDropdown && (searchResults.length > 0 || isSearching) && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-900/98 backdrop-blur-2xl border border-slate-700 rounded-2xl shadow-2xl overflow-hidden divide-y divide-slate-800 max-h-64 overflow-y-auto z-40">
-              <div className="px-3 py-1.5 bg-slate-800/60 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                <span>Matching Locations & Stops</span>
-                <span className="text-cyan-400 font-normal">OSM Geocoder + GTFS</span>
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-950 border-2 border-slate-700 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-hidden divide-y divide-slate-800 max-h-72 overflow-y-auto z-50">
+              <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-white">
+                  <Search className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Matching Stops & Places</span>
+                </span>
+                <span className="text-cyan-400 font-mono text-[10px] bg-slate-950 px-2 py-0.5 rounded border border-cyan-500/30">
+                  GTFS + OpenStreetMap
+                </span>
               </div>
 
               {isSearching && searchResults.length === 0 && (
-                <div className="px-4 py-3 flex items-center gap-2 text-xs text-slate-400">
-                  <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-                  <span>Searching OpenStreetMap for &ldquo;{floatingSearch}&rdquo;...</span>
+                <div className="px-4 py-4 flex items-center gap-2.5 text-xs text-cyan-300 font-medium bg-slate-950">
+                  <Loader2 className="w-4 h-4 text-cyan-400 animate-spin flex-shrink-0" />
+                  <span>Searching locations for &ldquo;{floatingSearch}&rdquo;...</span>
                 </div>
               )}
 
@@ -911,37 +890,37 @@ export const MapView: React.FC<MapViewProps> = ({
                 <div
                   key={item.id}
                   onClick={() => handleSelectSearchResult(item)}
-                  className="px-3.5 py-2 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between gap-2.5 transition-colors group"
+                  className="px-4 py-3 bg-slate-950 hover:bg-slate-900 cursor-pointer flex items-center justify-between gap-3 transition-colors group border-l-4 border-transparent hover:border-cyan-400"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="p-1.5 rounded-lg bg-slate-800 group-hover:bg-slate-700 text-cyan-400 flex-shrink-0 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="p-2 rounded-xl bg-slate-900 group-hover:bg-slate-800 text-cyan-400 flex-shrink-0 border border-slate-800 transition-colors">
                       {item.type === "stop" ? (
-                        <Bus className="w-3.5 h-3.5 text-amber-400" />
+                        <Bus className="w-4 h-4 text-amber-400" />
                       ) : (
-                        <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                        <MapPin className="w-4 h-4 text-cyan-400" />
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-white truncate">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-bold text-white group-hover:text-cyan-300 truncate transition-colors">
                           {item.title}
                         </span>
                         <span
-                          className={`text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase ${
+                          className={`text-[10px] px-2 py-0.5 rounded font-extrabold uppercase tracking-wider flex-shrink-0 shadow-sm ${
                             item.type === "stop"
-                              ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                              : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                              ? "bg-amber-400 text-slate-950"
+                              : "bg-cyan-400 text-slate-950"
                           }`}
                         >
                           {item.type === "stop" ? "Bus Stop" : "Place"}
                         </span>
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate">
+                      <div className="text-xs text-slate-300 group-hover:text-slate-200 truncate font-medium">
                         {item.subtitle}
                       </div>
                     </div>
                   </div>
-                  <Navigation className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
+                  <Navigation className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
                 </div>
               ))}
             </div>
