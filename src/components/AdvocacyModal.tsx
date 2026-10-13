@@ -72,9 +72,9 @@ Generated automatically via GKL Bus Mobility & Infrastructure Audit Platform.
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl text-xs text-slate-300 overflow-hidden">
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl text-xs text-slate-300 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 bg-slate-800/40 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-700 bg-slate-750/70 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
               <ShieldAlert className="w-5 h-5" />
@@ -91,7 +91,7 @@ Generated automatically via GKL Bus Mobility & Infrastructure Audit Platform.
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
           >
             <X className="w-4 h-4" />
           </button>
@@ -99,16 +99,16 @@ Generated automatically via GKL Bus Mobility & Infrastructure Audit Platform.
 
         {/* Report Content */}
         <div className="p-6 overflow-y-auto space-y-4 flex-1">
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-[11px] leading-relaxed text-slate-300 whitespace-pre-wrap max-h-80 overflow-y-auto">
+          <div className="bg-slate-900 p-4 rounded-xl border border-slate-750 font-mono text-[11px] leading-relaxed text-slate-200 whitespace-pre-wrap max-h-80 overflow-y-auto">
             {reportText}
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-3.5 border-t border-slate-800 bg-slate-900/60 flex items-center justify-end gap-3">
+        <div className="px-6 py-3.5 border-t border-slate-700 bg-slate-800/80 flex items-center justify-end gap-3">
           <button
             onClick={handleCopy}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl flex items-center gap-2 transition-colors"
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-650 text-slate-200 font-semibold rounded-xl flex items-center gap-2 transition-colors"
           >
             {copied ? (
               <>
@@ -125,7 +125,7 @@ Generated automatically via GKL Bus Mobility & Infrastructure Audit Platform.
 
           <button
             onClick={handleDownload}
-            className="px-4 py-2 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-red-500/20 transition-all"
+            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl flex items-center gap-2 transition-colors"
           >
             <Download className="w-4 h-4" />
             <span>Download Action Dossier (.txt)</span>

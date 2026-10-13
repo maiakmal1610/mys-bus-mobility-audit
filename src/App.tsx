@@ -115,7 +115,7 @@ export function App() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center text-slate-300 gap-3">
+      <div className="h-screen w-screen bg-slate-900 flex flex-col items-center justify-center text-slate-300 gap-3">
         <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
         <div className="text-sm font-semibold tracking-tight">
           Loading Klang Valley Bus Mobility & Infrastructure Audit...
@@ -128,7 +128,7 @@ export function App() {
   }
 
   return (
-    <div className="h-screen w-screen bg-slate-950 flex flex-col overflow-hidden font-sans">
+    <div className="h-screen w-screen bg-slate-900 flex flex-col overflow-hidden font-sans">
       <Header
         totalStops={allStops.length}
         deficientCount={deficientCount}
@@ -169,11 +169,11 @@ export function App() {
           {!isSidebarOpen && (
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-slate-900/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 shadow-2xl text-xs font-semibold text-slate-200 hover:text-white hover:border-cyan-500/50 hover:bg-slate-800 transition-all group"
+              className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-slate-800/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700 shadow-2xl text-xs font-semibold text-slate-200 hover:text-white hover:border-cyan-500/50 hover:bg-slate-750 transition-all group"
             >
               <PanelLeftOpen className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
               <span>Show Stops Directory</span>
-              <span className="text-[10px] bg-slate-800 text-cyan-400 px-1.5 py-0.5 rounded font-mono border border-slate-700/60">
+              <span className="text-[10px] bg-slate-700 text-cyan-300 px-1.5 py-0.5 rounded font-mono border border-slate-600">
                 {filteredStopsIds.size}
               </span>
             </button>

@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
         )}
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 border border-cyan-400/30 flex-shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center border border-cyan-400/40 flex-shrink-0">
           <Bus className="w-4 h-4 text-white" />
         </div>
         <div className="min-w-0">
@@ -70,13 +70,13 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Compact KPI Pills */}
         <div className="hidden lg:flex items-center gap-1.5 text-xs">
           {/* Stops Count */}
-          <div className="bg-slate-800/80 border border-slate-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+          <div className="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
             <span className="text-slate-400 text-[11px]">Stops:</span>
             <span className="font-bold text-white font-mono">{totalStops.toLocaleString()}</span>
           </div>
 
           {/* Deficient Count */}
-          <div className="bg-red-950/40 border border-red-800/40 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+          <div className="bg-red-950/40 border border-red-850/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="text-slate-300 text-[11px]">Deficits:</span>
             <span className="font-bold text-red-400 font-mono">
@@ -88,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Avg Score */}
-          <div className="bg-slate-800/80 border border-slate-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+          <div className="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
             <span className="text-slate-400 text-[11px]">Avg Score:</span>
             <span className="font-bold text-amber-400 font-mono">
               {averageScore.toFixed(1)}/9
@@ -96,10 +96,10 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Action Button */}
+        {/* Action Button (Solid cohesive color, no gradient) */}
         <button
           onClick={onOpenAdvocacyModal}
-          className="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold rounded-lg shadow-md shadow-cyan-500/20 transition-all flex items-center gap-1.5 flex-shrink-0"
+          className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
         >
           <ShieldAlert className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Council Dossier</span>

@@ -86,10 +86,10 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
     <div
       className={`absolute ${
         isSidebarCollapsed ? "top-16" : "top-4"
-      } left-4 z-20 w-80 max-h-[380px] bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 text-xs text-slate-200`}
+      } left-4 z-20 w-80 max-h-[380px] bg-slate-800/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 text-xs text-slate-200`}
     >
       {/* Pinned Header */}
-      <div className="px-4 py-3 border-b border-slate-800/80 bg-slate-800/50 flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-slate-700 bg-slate-750/70 flex items-center justify-between flex-shrink-0">
         <div className="min-w-0 pr-2">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 uppercase tracking-wider">
@@ -104,7 +104,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
 
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex-shrink-0"
+          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors flex-shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
@@ -117,7 +117,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
           className="p-3 rounded-xl border flex items-center justify-between"
           style={{
             borderColor: `${stop.color}40`,
-            backgroundColor: `${stop.color}10`,
+            backgroundColor: `${stop.color}15`,
           }}
         >
           <div>
@@ -150,7 +150,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
         </div>
 
         {/* Physical Infrastructure Checklist */}
-        <div className="bg-slate-800/40 border border-slate-800 p-3 rounded-xl space-y-2">
+        <div className="bg-slate-750/60 border border-slate-700 p-3 rounded-xl space-y-2">
           <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
             <span>Physical Amenities</span>
             <span className="text-[9px] text-slate-500 font-normal">AI Ground Truth</span>
@@ -160,8 +160,8 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
             <div
               className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.shelter
-                  ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                  : "bg-red-500/10 text-red-400 border border-red-500/20"
+                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                  : "bg-red-500/15 text-red-400 border border-red-500/30"
               }`}
             >
               <span>☔ Rain Shelter</span>
@@ -171,8 +171,8 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
             <div
               className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.street_light
-                  ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                  : "bg-red-500/10 text-red-400 border border-red-500/20"
+                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                  : "bg-red-500/15 text-red-400 border border-red-500/30"
               }`}
             >
               <span>💡 Night Light</span>
@@ -182,8 +182,8 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
             <div
               className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.bench
-                  ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                  : "bg-slate-800/60 text-slate-500"
+                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                  : "bg-slate-700/60 text-slate-400"
               }`}
             >
               <span>🪑 Bench</span>
@@ -193,8 +193,8 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
             <div
               className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.zebra_crossing
-                  ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                  : "bg-slate-800/60 text-slate-500"
+                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                  : "bg-slate-700/60 text-slate-400"
               }`}
             >
               <span>🚸 Crossing</span>
@@ -204,7 +204,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
         </div>
 
         {/* Crowdsourced Community Audit & Rating */}
-        <div className="bg-slate-800/40 border border-slate-800 p-3 rounded-xl space-y-2.5">
+        <div className="bg-slate-750/60 border border-slate-700 p-3 rounded-xl space-y-2.5">
           <div className="flex items-center justify-between">
             <h3 className="text-[11px] font-bold text-white flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
@@ -244,14 +244,14 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Share ground reality (e.g., roof broken, unlit at night)..."
                 rows={2}
-                className="w-full bg-slate-900 border border-slate-700/60 rounded-lg p-2 text-white placeholder-slate-500 text-[11px] focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white placeholder-slate-400 text-[11px] focus:outline-none focus:ring-1 focus:ring-cyan-500"
               />
             </div>
 
             <button
               type="submit"
               disabled={!comment.trim()}
-              className="w-full py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-40 text-white font-semibold rounded-lg text-[11px] transition-all flex items-center justify-center gap-1.5"
+              className="w-full py-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white font-semibold rounded-lg text-[11px] transition-colors flex items-center justify-center gap-1.5"
             >
               <Send className="w-3 h-3" />
               <span>Submit Community Audit</span>
@@ -259,7 +259,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
           </form>
 
           {audits.length > 0 && (
-            <div className="pt-2 border-t border-slate-800 space-y-1.5">
+            <div className="pt-2 border-t border-slate-700 space-y-1.5">
               <div className="text-[10px] text-slate-400 font-semibold">
                 Recent Commuter Notes:
               </div>
@@ -267,7 +267,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
                 {audits.slice(0, 3).map((a, idx) => (
                   <div
                     key={idx}
-                    className="p-1.5 rounded bg-slate-900/60 border border-slate-800 text-[10px]"
+                    className="p-1.5 rounded bg-slate-800 border border-slate-700 text-[10px]"
                   >
                     <div className="flex items-center justify-between text-slate-400 mb-0.5">
                       <span className="text-amber-400 font-mono">
@@ -289,7 +289,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
         {/* Civic Call-to-Action */}
         <button
           onClick={handleCopyComplaintSlip}
-          className="w-full py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+          className="w-full py-2 bg-slate-700 hover:bg-slate-650 text-slate-100 border border-slate-600 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
         >
           {copied ? (
             <>

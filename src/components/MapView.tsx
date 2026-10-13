@@ -327,41 +327,14 @@ export const MapView: React.FC<MapViewProps> = ({
         }
         return showSelangorBoundary;
       },
-      style: (feature) => {
-        const cat = feature?.properties?.category;
-        const name = (feature?.properties?.displayName || feature?.properties?.shapeName || "").toLowerCase();
-
-        if (cat === "kuala_lumpur" || name.includes("kuala lumpur")) {
-          return {
-            color: "#0284c7", // Bold deep cyan/blue DBKL border
-            weight: 3.5,
-            opacity: 1,
-            fillColor: "#0284c7",
-            fillOpacity: 0.08,
-            interactive: false,
-          };
-        } else if (cat === "putrajaya" || name.includes("putrajaya")) {
-          return {
-            color: "#6366f1", // Indigo Putrajaya boundary
-            weight: 3,
-            opacity: 0.95,
-            fillColor: "#6366f1",
-            fillOpacity: 0.08,
-            interactive: false,
-          };
-        } else {
-          // Selangor District (Petaling, Gombak, Hulu Langat, Klang, Sepang, etc.)
-          return {
-            color: "#0ea5e9", // Vivid cyan district perimeter
-            weight: 2,
-            dashArray: "5, 5",
-            opacity: 0.85,
-            fillColor: "#38bdf8",
-            fillOpacity: 0.04,
-            interactive: false,
-          };
-        }
-      },
+      style: () => ({
+        color: "#0284c7", // Bold deep cyan/blue border matching KL boundary
+        weight: 3.5,
+        opacity: 1,
+        fillColor: "#0284c7",
+        fillOpacity: 0.08,
+        interactive: false,
+      }),
     }).addTo(mapRef.current);
 
     boundaryLayerRef.current = boundary;
@@ -693,16 +666,16 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full bg-slate-950 overflow-hidden">
+    <div className="relative w-full h-full bg-slate-900 overflow-hidden">
       {/* Map Target */}
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
       {/* Scale Generalization Helper Pill when zoomed out */}
       {!isZoomSufficient && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-slate-900/90 backdrop-blur-md border border-slate-700/60 px-4 py-1.5 rounded-full shadow-2xl flex items-center gap-2.5 text-xs text-slate-300 pointer-events-auto transition-all">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-slate-800/95 backdrop-blur-md border border-slate-700 px-4 py-1.5 rounded-full shadow-2xl flex items-center gap-2.5 text-xs text-slate-200 pointer-events-auto transition-all">
           <ZoomIn className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
           <span>Zoom in or search below to reveal local bus stops</span>
-          <span className="text-slate-600">•</span>
+          <span className="text-slate-500">•</span>
           <button
             onClick={() => setForceShowAllPoints(true)}
             className="text-cyan-400 hover:text-cyan-300 font-semibold underline text-[11px]"
@@ -721,10 +694,10 @@ export const MapView: React.FC<MapViewProps> = ({
               setShowLayerMenu((prev) => !prev);
               setShowBasemapMenu(false);
             }}
-            className={`flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 shadow-xl text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-2 bg-slate-800/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 shadow-xl text-xs font-semibold transition-colors ${
               showLayerMenu
                 ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
-                : "text-slate-200 hover:text-white hover:border-slate-700"
+                : "text-slate-200 hover:text-white hover:border-slate-600"
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
@@ -732,10 +705,10 @@ export const MapView: React.FC<MapViewProps> = ({
           </button>
 
           {showLayerMenu && (
-            <div className="absolute right-0 top-full mt-2 w-72 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-2.5 z-30 divide-y divide-slate-800/60 text-xs">
+            <div className="absolute right-0 top-full mt-2 w-72 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2.5 z-30 divide-y divide-slate-700/60 text-xs">
               {/* Generalization Scale Setting */}
               <div className="pb-2">
-                <label className="flex items-center justify-between p-1.5 rounded-lg bg-slate-800/40 hover:bg-slate-800 cursor-pointer">
+                <label className="flex items-center justify-between p-1.5 rounded-lg bg-slate-750/70 hover:bg-slate-700 cursor-pointer">
                   <div className="flex items-center gap-2 text-slate-200">
                     <ZoomIn className="w-4 h-4 text-cyan-400" />
                     <div>
@@ -747,7 +720,7 @@ export const MapView: React.FC<MapViewProps> = ({
                     type="checkbox"
                     checked={forceShowAllPoints}
                     onChange={(e) => setForceShowAllPoints(e.target.checked)}
-                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
+                    className="rounded border-slate-600 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
                   />
                 </label>
               </div>
@@ -758,7 +731,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   Bus Stop Layers (By Quality)
                 </div>
 
-                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-700/60 cursor-pointer">
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/30 flex-shrink-0" />
                     <span className="text-slate-200 text-xs">Critical Deficit (&lt;3)</span>
@@ -767,11 +740,11 @@ export const MapView: React.FC<MapViewProps> = ({
                     type="checkbox"
                     checked={showDeficientStops}
                     onChange={(e) => setShowDeficientStops(e.target.checked)}
-                    className="rounded border-slate-700 text-red-500 focus:ring-red-500 w-4 h-4 accent-red-500"
+                    className="rounded border-slate-600 text-red-500 focus:ring-red-500 w-4 h-4 accent-red-500"
                   />
                 </label>
 
-                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-700/60 cursor-pointer">
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-amber-500 shadow-sm shadow-amber-500/30 flex-shrink-0" />
                     <span className="text-slate-200 text-xs">Moderate Quality (3-5)</span>
@@ -780,11 +753,11 @@ export const MapView: React.FC<MapViewProps> = ({
                     type="checkbox"
                     checked={showModerateStops}
                     onChange={(e) => setShowModerateStops(e.target.checked)}
-                    className="rounded border-slate-700 text-amber-500 focus:ring-amber-500 w-4 h-4 accent-amber-500"
+                    className="rounded border-slate-600 text-amber-500 focus:ring-amber-500 w-4 h-4 accent-amber-500"
                   />
                 </label>
 
-                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-700/60 cursor-pointer">
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/30 flex-shrink-0" />
                     <span className="text-slate-200 text-xs">Good Quality (≥6)</span>
@@ -793,7 +766,7 @@ export const MapView: React.FC<MapViewProps> = ({
                     type="checkbox"
                     checked={showGoodStops}
                     onChange={(e) => setShowGoodStops(e.target.checked)}
-                    className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500 w-4 h-4 accent-emerald-500"
+                    className="rounded border-slate-600 text-emerald-500 focus:ring-emerald-500 w-4 h-4 accent-emerald-500"
                   />
                 </label>
               </div>
@@ -804,7 +777,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   Corridors & Boundaries
                 </div>
 
-                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-700/60 cursor-pointer">
                   <div className="flex items-center gap-2 text-xs text-slate-200">
                     <Train className="w-4 h-4 text-rose-400" />
                     <span>Rail Corridors (MRT/LRT)</span>
@@ -813,11 +786,11 @@ export const MapView: React.FC<MapViewProps> = ({
                     type="checkbox"
                     checked={showRailLines}
                     onChange={(e) => setShowRailLines(e.target.checked)}
-                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
+                    className="rounded border-slate-600 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
                   />
                 </label>
 
-                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-700/60 cursor-pointer">
                   <div className="flex items-center gap-2 text-xs text-slate-200">
                     <MapIcon className="w-4 h-4 text-sky-400" />
                     <span>KL City Boundary (DBKL)</span>
@@ -826,11 +799,11 @@ export const MapView: React.FC<MapViewProps> = ({
                     type="checkbox"
                     checked={showKlBoundary}
                     onChange={(e) => setShowKlBoundary(e.target.checked)}
-                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
+                    className="rounded border-slate-600 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
                   />
                 </label>
 
-                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer">
+                <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-700/60 cursor-pointer">
                   <div className="flex items-center gap-2 text-xs text-slate-200">
                     <MapIcon className="w-4 h-4 text-cyan-400" />
                     <div>
@@ -842,7 +815,7 @@ export const MapView: React.FC<MapViewProps> = ({
                     type="checkbox"
                     checked={showSelangorBoundary}
                     onChange={(e) => setShowSelangorBoundary(e.target.checked)}
-                    className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
+                    className="rounded border-slate-600 text-cyan-500 focus:ring-cyan-500 w-4 h-4 accent-cyan-500"
                   />
                 </label>
               </div>
@@ -857,14 +830,14 @@ export const MapView: React.FC<MapViewProps> = ({
               setShowBasemapMenu((prev) => !prev);
               setShowLayerMenu(false);
             }}
-            className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 shadow-xl text-xs font-semibold text-slate-200 hover:text-white hover:border-slate-700 transition-colors"
+            className="flex items-center gap-2 bg-slate-800/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 shadow-xl text-xs font-semibold text-slate-200 hover:text-white hover:border-slate-600 transition-colors"
           >
             <Layers className="w-3.5 h-3.5 text-cyan-400" />
             <span>Basemap: {activeBasemap.name}</span>
           </button>
 
           {showBasemapMenu && (
-            <div className="absolute right-0 top-full mt-2 w-52 bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-xl shadow-2xl p-1.5 z-30 divide-y divide-slate-800/60">
+            <div className="absolute right-0 top-full mt-2 w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-30 divide-y divide-slate-700/60">
               <div className="p-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 Select Base Layer
               </div>
@@ -879,12 +852,12 @@ export const MapView: React.FC<MapViewProps> = ({
                     className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
                       activeBasemapId === opt.id
                         ? "bg-cyan-500/20 text-cyan-300 font-semibold"
-                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                        : "text-slate-300 hover:bg-slate-700 hover:text-white"
                     }`}
                   >
                     <div>
                       <div>{opt.name}</div>
-                      <div className="text-[10px] text-slate-500">{opt.category}</div>
+                      <div className="text-[10px] text-slate-400">{opt.category}</div>
                     </div>
                     {activeBasemapId === opt.id && <Check className="w-3.5 h-3.5 text-cyan-400" />}
                   </button>
@@ -900,7 +873,7 @@ export const MapView: React.FC<MapViewProps> = ({
         ref={searchContainerRef}
         className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-xl"
       >
-        <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-800 rounded-2xl p-3 shadow-2xl space-y-2 relative">
+        <div className="bg-slate-800/95 backdrop-blur-xl border border-slate-700 rounded-2xl p-3 shadow-2xl space-y-2 relative">
           {/* Search Input */}
           <form onSubmit={handleSearchSubmit} className="relative flex items-center">
             {isSearching ? (
@@ -916,7 +889,7 @@ export const MapView: React.FC<MapViewProps> = ({
               onFocus={() => {
                 if (searchResults.length > 0 || isSearching) setShowDropdown(true);
               }}
-              className="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+              className="w-full bg-slate-700/60 border border-slate-600 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             />
             {floatingSearch && (
               <button
@@ -935,19 +908,19 @@ export const MapView: React.FC<MapViewProps> = ({
 
           {/* Autocomplete Suggestions Dropdown (OSM Geocoder + GTFS Bus Stops) */}
           {showDropdown && (searchResults.length > 0 || isSearching) && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-950 border-2 border-slate-700 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-hidden divide-y divide-slate-800 max-h-72 overflow-y-auto z-50">
-              <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border-2 border-slate-700 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden divide-y divide-slate-700/80 max-h-72 overflow-y-auto z-50">
+              <div className="px-4 py-2 bg-slate-750 border-b border-slate-700 text-[11px] font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-white">
                   <Search className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Matching Stops & Places</span>
                 </span>
-                <span className="text-cyan-400 font-mono text-[10px] bg-slate-950 px-2 py-0.5 rounded border border-cyan-500/30">
+                <span className="text-cyan-400 font-mono text-[10px] bg-slate-800 px-2 py-0.5 rounded border border-cyan-500/30">
                   GTFS + OpenStreetMap
                 </span>
               </div>
 
               {isSearching && searchResults.length === 0 && (
-                <div className="px-4 py-4 flex items-center gap-2.5 text-xs text-cyan-300 font-medium bg-slate-950">
+                <div className="px-4 py-4 flex items-center gap-2.5 text-xs text-cyan-300 font-medium bg-slate-800">
                   <Loader2 className="w-4 h-4 text-cyan-400 animate-spin flex-shrink-0" />
                   <span>Searching locations for &ldquo;{floatingSearch}&rdquo;...</span>
                 </div>
@@ -957,10 +930,10 @@ export const MapView: React.FC<MapViewProps> = ({
                 <div
                   key={item.id}
                   onClick={() => handleSelectSearchResult(item)}
-                  className="px-4 py-3 bg-slate-950 hover:bg-slate-900 cursor-pointer flex items-center justify-between gap-3 transition-colors group border-l-4 border-transparent hover:border-cyan-400"
+                  className="px-4 py-3 bg-slate-800 hover:bg-slate-700 cursor-pointer flex items-center justify-between gap-3 transition-colors group border-l-4 border-transparent hover:border-cyan-400"
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="p-2 rounded-xl bg-slate-900 group-hover:bg-slate-800 text-cyan-400 flex-shrink-0 border border-slate-800 transition-colors">
+                    <div className="p-2 rounded-xl bg-slate-700 group-hover:bg-slate-650 text-cyan-400 flex-shrink-0 border border-slate-600 transition-colors">
                       {item.type === "stop" ? (
                         <Bus className="w-4 h-4 text-amber-400" />
                       ) : (
@@ -975,8 +948,8 @@ export const MapView: React.FC<MapViewProps> = ({
                         <span
                           className={`text-[10px] px-2 py-0.5 rounded font-extrabold uppercase tracking-wider flex-shrink-0 shadow-sm ${
                             item.type === "stop"
-                              ? "bg-amber-400 text-slate-950"
-                              : "bg-cyan-400 text-slate-950"
+                              ? "bg-amber-400 text-slate-900"
+                              : "bg-cyan-400 text-slate-900"
                           }`}
                         >
                           {item.type === "stop" ? "Bus Stop" : "Place"}
@@ -987,7 +960,7 @@ export const MapView: React.FC<MapViewProps> = ({
                       </div>
                     </div>
                   </div>
-                  <Navigation className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
+                  <Navigation className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 flex-shrink-0 transition-colors" />
                 </div>
               ))}
             </div>
@@ -1007,7 +980,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   setShowDropdown(false);
                   handleJumpToCoords(area.coords[0], area.coords[1], area.zoom);
                 }}
-                className="px-2.5 py-1 bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg border border-slate-700/60 font-medium transition-colors flex-shrink-0"
+                className="px-2.5 py-1 bg-slate-700/70 hover:bg-slate-600 text-slate-200 hover:text-white rounded-lg border border-slate-600/70 font-medium transition-colors flex-shrink-0"
               >
                 {area.name}
               </button>
@@ -1017,7 +990,7 @@ export const MapView: React.FC<MapViewProps> = ({
       </div>
 
       {/* Floating Legend */}
-      <div className="absolute bottom-6 left-6 z-10 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-2xl p-3 shadow-2xl text-[11px] text-slate-300 space-y-1.5 hidden md:block">
+      <div className="absolute bottom-6 left-6 z-10 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-2xl p-3 shadow-2xl text-[11px] text-slate-300 space-y-1.5 hidden md:block">
         <div className="font-semibold text-white flex items-center gap-1.5 text-xs">
           <Bus className="w-3.5 h-3.5 text-cyan-400" />
           <span>Quality Legend</span>
@@ -1036,7 +1009,7 @@ export const MapView: React.FC<MapViewProps> = ({
             <span>Deficient (&lt;3)</span>
           </div>
         </div>
-        <div className="pt-1 border-t border-slate-800/80 text-[9px] text-slate-500">
+        <div className="pt-1 border-t border-slate-700 text-[9px] text-slate-400">
           {isZoomSufficient ? "● Points visible" : "○ Zoom in (≥14) to view"}
         </div>
       </div>

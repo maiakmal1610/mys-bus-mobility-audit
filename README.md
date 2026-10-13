@@ -1,71 +1,101 @@
-# 🚏 GKL Bus Mobility & Infrastructure Audit (GKL-Pulse)
+# 🚏 GKL Bus Mobility & Infrastructure Audit
 
-> **A crowdsourced geospatial audit platform evaluating bus stop quality, accessibility, and multimodal rail transit connectivity across 2,565 stops in Greater Kuala Lumpur.**
+> **An interactive geospatial audit platform evaluating bus stop infrastructure quality, commuter accessibility, and multimodal transit connectivity across 2,565 stops in Greater Kuala Lumpur and Selangor.**
 
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9.4-199900.svg?logo=leaflet&logoColor=white)](https://leafletjs.com)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![KRI Research](https://img.shields.io/badge/Research_Base-KRI_GKLMOB-8b5cf6.svg)](https://github.com/KRI-Data/GKLMOB-anatomy-of-busstops)
 
 ---
 
-## 🎯 Executive Summary & Context
+## 🎯 Overview
 
-First-mile and last-mile connectivity remains the critical barrier to public transportation adoption across the Klang Valley. While billions have been invested in mega-rail lines (LRT, MRT, Monorail), neighborhood bus infrastructure suffers from chronic under-maintenance: missing rain shelters, broken seating, unlit walkways at night, and absent route timetables.
+First-mile and last-mile connectivity is a decisive factor in public transportation adoption across the Klang Valley. While significant investments have expanded the regional rail network (LRT, MRT, Monorail), neighborhood bus stops frequently lack essential commuter infrastructure: weather-proof rain shelters, adequate night lighting, accessible seating, and safe pedestrian crossings.
 
-This project directly builds upon and levels up research initiated by the **Khazanah Research Institute (KRI)** under [GKLMOB-anatomy-of-busstops](https://github.com/KRI-Data/GKLMOB-anatomy-of-busstops):
-* **From Model to Ground Truth:** Transforming KRI's static YOLOv8 computer-vision object detection dataset into a living, high-performance, interactive geospatial audit application.
-* **Multimodal Integration:** Overlaying bus stops against Klang Valley **LRT & MRT rail transit corridors** and official **Kuala Lumpur city boundaries** to evaluate intermodal connectivity.
-* **Human-in-the-Loop Crowdsourcing:** Empowering daily commuters to verify physical conditions, rate stops, submit ground-truth commentary, and generate actionable advocacy dossiers for local authorities (**DBKL, MBPJ, MBSA**) and **Prasarana Malaysia**.
+This platform provides an open, interactive spatial audit benchmark covering **2,565 bus stops** across Greater Kuala Lumpur and Selangor, categorizing infrastructure quality and empowering commuters and advocates with evidence-based reporting tools.
 
 ---
 
-## 🏗️ Architecture
+## 🗺️ Current Methodology & Data Pipeline
 
-```
-Open Transit Data (KRI YOLOv8 + Rapid KL GTFS + geoBoundaries)
-                       │
-                       ▼
-        Python Data Ingestion Pipeline
-         (pipeline/extract_transit.py)
-                       │
-       ┌───────────────┼───────────────┐
-       ▼               ▼               ▼
-kl_bus_stops.geojson  kl_rail_lines   kl_boundary
-  (2,565 stops)          (5 lines)     (DBKL ADM2)
-       │               │               │
-       └───────────────┼───────────────┘
-                       ▼
-       React 18 + Leaflet Interactive Geoportal
-         • Multi-Basemap (Dark, Streets, Satellite)
-         • Council & Quality Tier Filters
-         • Crowdsourced Audit & Storage Engine
-         • DBKL / Prasarana Complaint Slip Generator
-```
+The current platform operates as an edge-optimized, offline-first geospatial application. Spatial datasets are pre-processed into lightweight GeoJSON format and served directly to the client:
+
+### 1. Spatial Datasets
+* **Bus Stop Quality & Inventory:** 2,565 bus stops with coordinate geometries, local authority assignments, and presence-based scoring across 9 physical infrastructure indicators.
+* **Administrative Boundaries:** GeoJSON boundaries covering **Kuala Lumpur (DBKL)**, **Putrajaya**, and all **9 Selangor Administrative Districts** (*Petaling, Gombak, Hulu Langat, Klang, Sepang, Kuala Langat, Kuala Selangor, Hulu Selangor, Sabak Bernam*).
+* **Multimodal Rail Corridors:** Spatial alignments for major rapid transit lines (MRT Kajang, MRT Putrajaya, LRT Kelana Jaya, LRT Ampang/Sri Petaling, KL Monorail) to evaluate bus-rail feeder integration.
+
+### 2. Infrastructure Quality Metric (0 to 9 Scale)
+Each bus stop is scored on a 0–9 benchmark based on verified physical amenities:
+* ☔ **Rain Shelter**
+* 💡 **Night Street Lighting**
+* 🪑 **Seating Bench**
+* 🗑️ **Waste Bin**
+* 🚸 **Safe Pedestrian Crossing / Zebra Crossing**
+* 🛑 **Bus Stop Signboard / Pole**
+* 🦯 **Tactile Paving**
+* 〰️ **Rumble Strips**
+* 🛣️ **Road Markings**
+
+Stops are grouped into three quality tiers:
+* 🔴 **Critical Deficit (< 3 / 9):** Severe infrastructure deficit; missing basic shelter or lighting.
+* 🟡 **Moderate (3 – 5 / 9):** Partial amenities present; basic pole or partial canopy.
+* 🟢 **Good (≥ 6 / 9):** Compliant, well-equipped transit stop.
+
+---
+
+## 🏗️ System Architecture
+
+<!-- Architecture Diagram Placeholder: draw.io diagram to be inserted here -->
+*(Architecture diagram will be inserted here)*
+
+### Current Technical Implementation:
+* **Frontend:** React 18 SPA built with Vite and TypeScript.
+* **Cartography:** Leaflet.js with custom vector overlays, dynamic tile caching (`keepBuffer: 8`), and 6 selectable base maps (Google Streets, CARTO Positron, CARTO Dark Matter, Esri World Imagery, OpenStreetMap, Waze).
+* **Scale-Dependent Generalization:** High-density point layers automatically declutter at overview zoom levels and reveal dynamically upon zooming in, searching, or selecting specific stations.
+* **Real-Time Geocoding:** Dual-source spatial search combining instant local station matching with Photon OpenStreetMap geocoding biased to Greater KL coordinates.
+* **Client-Side Persistence:** Commuter ratings and field notes persist locally in browser storage (`localStorage`), requiring zero backend setup for local evaluation.
 
 ---
 
 ## 📊 Core Features
 
-1. **Multimodal Cartography:** Seamlessly visualizes 2,565 bus stops alongside MRT Kajang, MRT Putrajaya, LRT Kelana Jaya, LRT Ampang/Sri Petaling, and KL Monorail corridors.
-2. **KRI Infrastructure Quality Scoring:** Every stop reflects presence-based scoring (0 to 9) across 9 physical elements (shelter, night lighting, bench, trash bin, zebra crossing, signage, rumble strips, road markings).
-3. **Crowdsourced Condition Auditor:** Citizens can rate stop conditions (1–5 stars), flag broken amenities, and leave ground-reality notes persisted via local storage.
-4. **Council Action Dossier:** One-click generation of structured complaint reports highlighting priority deficit stops for submission to DBKL, Prasarana, and APAD.
+1. **Interactive Cartography:** Explore 2,565 bus stops with color-coded quality indicators, administrative district perimeters, and optional rail corridors.
+2. **Real-Time Neighborhood Search:** Search by station name, stop ID, or neighborhood (e.g., Bangsar, Mont Kiara, Cheras) to pan and activate station markers.
+3. **Collapsible Stop Directory:** Filter stops by governing local council (DBKL, MBPJ, MBSJ, MBSA, etc.) and quality tier with responsive drawer controls.
+4. **Commuter Field Audit:** View detailed amenity checklists per stop, record 1–5 star condition ratings, and submit field notes.
+5. **Council Action Dossier:** One-click generation of structured complaint briefs and formal advocacy text for submission to local municipal councils and transport agencies.
 
 ---
 
 ## 🚀 Getting Started
 
-```bash
-# 1. Install dependencies
-npm install
+### Prerequisites
+* **Node.js** (v18 or higher)
+* **npm** or **yarn**
 
-# 2. Compile spatial data pipeline
-python pipeline/extract_transit.py
+### Installation & Run
+
+```bash
+# 1. Clone repository
+git clone https://github.com/maiakmal1610/mys-bus-mobility-audit.git
+cd mys-bus-mobility-audit
+
+# 2. Install dependencies
+npm install
 
 # 3. Start local development server
 npm run dev
 ```
 
-Navigate to `http://localhost:8081` in your browser.
+The application will be running at `http://localhost:8081`.
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+Production output is generated in the `dist/` directory, ready for deployment to GitHub Pages or any static CDN host.
