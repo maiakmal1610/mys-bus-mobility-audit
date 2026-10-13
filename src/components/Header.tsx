@@ -7,6 +7,8 @@ import {
   ShieldAlert,
   PanelLeftClose,
   PanelLeftOpen,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -16,6 +18,8 @@ interface HeaderProps {
   onOpenAdvocacyModal: () => void;
   isSidebarOpen?: boolean;
   onToggleSidebar?: () => void;
+  isDarkMode?: boolean;
+  onToggleTheme?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,9 +29,11 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdvocacyModal,
   isSidebarOpen = true,
   onToggleSidebar,
+  isDarkMode = true,
+  onToggleTheme,
 }) => {
   return (
-    <header className="h-14 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 md:px-6 flex items-center justify-between z-30 flex-shrink-0 gap-3 select-none">
+    <header className="h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 md:px-6 flex items-center justify-between z-30 flex-shrink-0 gap-3 select-none transition-colors">
       {/* Brand & Project Identity */}
       <div className="flex items-center gap-2.5 min-w-0 flex-shrink-0">
         {onToggleSidebar && (
@@ -36,8 +42,8 @@ export const Header: React.FC<HeaderProps> = ({
             title={isSidebarOpen ? "Collapse directory sidebar (maximize map space)" : "Expand directory sidebar"}
             className={`p-1.5 rounded-xl border transition-all ${
               isSidebarOpen
-                ? "bg-slate-800 text-cyan-400 border-cyan-500/30 hover:bg-slate-700 shadow-sm"
-                : "bg-slate-800/60 text-slate-300 border-slate-700/60 hover:text-white hover:bg-slate-700"
+                ? "bg-slate-100 dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-slate-200 dark:hover:bg-slate-700 shadow-sm"
+                : "bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700"
             }`}
           >
             {isSidebarOpen ? (
@@ -47,19 +53,19 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
         )}
-        <div className="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center border border-cyan-400/40 flex-shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center border border-cyan-400/40 flex-shrink-0 shadow-sm">
           <Bus className="w-4 h-4 text-white" />
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-sm md:text-base font-bold text-white tracking-tight truncate">
+            <h1 className="text-sm md:text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
               GKL Bus Mobility Audit
             </h1>
-            <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 flex-shrink-0">
+            <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20 flex-shrink-0">
               Civic Audit
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 truncate hidden md:block">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate hidden md:block">
             2,565 Bus Stops • RapidKL / DBKL / Selangor
           </p>
         </div>
@@ -70,36 +76,51 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Compact KPI Pills */}
         <div className="hidden lg:flex items-center gap-1.5 text-xs">
           {/* Stops Count */}
-          <div className="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-            <span className="text-slate-400 text-[11px]">Stops:</span>
-            <span className="font-bold text-white font-mono">{totalStops.toLocaleString()}</span>
+          <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+            <span className="text-slate-500 dark:text-slate-400 text-[11px]">Stops:</span>
+            <span className="font-bold text-slate-900 dark:text-white font-mono">{totalStops.toLocaleString()}</span>
           </div>
 
           {/* Deficient Count */}
-          <div className="bg-red-950/40 border border-red-850/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-850/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-slate-300 text-[11px]">Deficits:</span>
-            <span className="font-bold text-red-400 font-mono">
+            <span className="text-slate-600 dark:text-slate-300 text-[11px]">Deficits:</span>
+            <span className="font-bold text-red-600 dark:text-red-400 font-mono">
               {deficientCount.toLocaleString()}
             </span>
-            <span className="text-[10px] text-red-300/80">
+            <span className="text-[10px] text-red-500 dark:text-red-300/80">
               ({totalStops > 0 ? Math.round((deficientCount / totalStops) * 100) : 0}%)
             </span>
           </div>
 
           {/* Avg Score */}
-          <div className="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-            <span className="text-slate-400 text-[11px]">Avg Score:</span>
-            <span className="font-bold text-amber-400 font-mono">
+          <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+            <span className="text-slate-500 dark:text-slate-400 text-[11px]">Avg Score:</span>
+            <span className="font-bold text-amber-600 dark:text-amber-400 font-mono">
               {averageScore.toFixed(1)}/9
             </span>
           </div>
         </div>
 
+        {/* Dark / Light Mode Toggle Button */}
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-all flex items-center justify-center shadow-sm"
+          >
+            {isDarkMode ? (
+              <Sun className="w-4 h-4 text-amber-400 hover:rotate-45 transition-transform" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-700 hover:-rotate-12 transition-transform" />
+            )}
+          </button>
+        )}
+
         {/* Action Button (Solid cohesive color, no gradient) */}
         <button
           onClick={onOpenAdvocacyModal}
-          className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+          className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0 shadow-sm"
         >
           <ShieldAlert className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Council Dossier</span>

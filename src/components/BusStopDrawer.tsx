@@ -86,25 +86,25 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
     <div
       className={`absolute ${
         isSidebarCollapsed ? "top-16" : "top-4"
-      } left-4 z-20 w-80 max-h-[380px] bg-slate-800/95 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 text-xs text-slate-200`}
+      } left-4 z-20 w-80 max-h-[380px] bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 text-xs text-slate-700 dark:text-slate-200`}
     >
       {/* Pinned Header */}
-      <div className="px-4 py-3 border-b border-slate-700 bg-slate-750/70 flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-750/70 flex items-center justify-between flex-shrink-0">
         <div className="min-w-0 pr-2">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 uppercase tracking-wider">
               {stop.council.split(" ")[0]}
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">#{stop.stop_id}</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">#{stop.stop_id}</span>
           </div>
-          <h2 className="text-sm font-bold text-white tracking-tight truncate">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate">
             {stop.stop_name}
           </h2>
         </div>
 
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors flex-shrink-0"
+          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
@@ -121,14 +121,14 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
           }}
         >
           <div>
-            <div className="text-[10px] uppercase font-semibold text-slate-400">
+            <div className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400">
               Infrastructure Quality Metric
             </div>
             <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-3xl font-extrabold text-white font-mono">
+              <span className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">
                 {stop.quality_score.toFixed(0)}
               </span>
-              <span className="text-[11px] text-slate-400 font-medium">/ 9 elements</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">/ 9 elements</span>
             </div>
             <div className="text-[10px] font-semibold mt-1" style={{ color: stop.color }}>
               {stop.tier}
@@ -150,18 +150,18 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
         </div>
 
         {/* Physical Infrastructure Checklist */}
-        <div className="bg-slate-750/60 border border-slate-700 p-3 rounded-xl space-y-2">
-          <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="bg-slate-50 dark:bg-slate-750/60 border border-slate-200 dark:border-slate-700 p-3 rounded-xl space-y-2">
+          <div className="flex justify-between items-center text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             <span>Physical Amenities</span>
-            <span className="text-[9px] text-slate-500 font-normal">AI Ground Truth</span>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 font-normal">AI Ground Truth</span>
           </div>
 
           <div className="grid grid-cols-2 gap-1.5 text-[11px]">
             <div
               className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.shelter
-                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                  : "bg-red-500/15 text-red-400 border border-red-500/30"
+                  ? "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30"
+                  : "bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/30"
               }`}
             >
               <span>☔ Rain Shelter</span>
@@ -171,8 +171,8 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
             <div
               className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.street_light
-                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                  : "bg-red-500/15 text-red-400 border border-red-500/30"
+                  ? "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30"
+                  : "bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/30"
               }`}
             >
               <span>💡 Night Light</span>
@@ -182,8 +182,8 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
             <div
               className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.bench
-                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                  : "bg-slate-700/60 text-slate-400"
+                  ? "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30"
+                  : "bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400"
               }`}
             >
               <span>🪑 Bench</span>
@@ -193,8 +193,8 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
             <div
               className={`p-1.5 rounded-lg flex items-center justify-between ${
                 stop.amenities.zebra_crossing
-                  ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                  : "bg-slate-700/60 text-slate-400"
+                  ? "bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30"
+                  : "bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-400"
               }`}
             >
               <span>🚸 Crossing</span>
@@ -204,20 +204,20 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
         </div>
 
         {/* Crowdsourced Community Audit & Rating */}
-        <div className="bg-slate-750/60 border border-slate-700 p-3 rounded-xl space-y-2.5">
+        <div className="bg-slate-50 dark:bg-slate-750/60 border border-slate-200 dark:border-slate-700 p-3 rounded-xl space-y-2.5">
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] font-bold text-white flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
+            <h3 className="text-[11px] font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <MessageSquare className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               <span>Crowdsource Stop Audit</span>
             </h3>
-            <span className="text-[10px] text-cyan-400 font-semibold">
+            <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-semibold">
               {audits.length} Reports
             </span>
           </div>
 
           <form onSubmit={handleSubmitAudit} className="space-y-2">
             <div>
-              <div className="text-[10px] text-slate-400 mb-1">Rate Real Condition:</div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 mb-1">Rate Real Condition:</div>
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -230,7 +230,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
                       className={`w-3.5 h-3.5 ${
                         star <= rating
                           ? "text-amber-400 fill-amber-400"
-                          : "text-slate-600"
+                          : "text-slate-300 dark:text-slate-600"
                       }`}
                     />
                   </button>
@@ -244,7 +244,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Share ground reality (e.g., roof broken, unlit at night)..."
                 rows={2}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white placeholder-slate-400 text-[11px] focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-slate-900 dark:text-white placeholder-slate-400 text-[11px] focus:outline-none focus:ring-1 focus:ring-cyan-500"
               />
             </div>
 
@@ -259,18 +259,18 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
           </form>
 
           {audits.length > 0 && (
-            <div className="pt-2 border-t border-slate-700 space-y-1.5">
-              <div className="text-[10px] text-slate-400 font-semibold">
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-1.5">
+              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
                 Recent Commuter Notes:
               </div>
               <div className="space-y-1 max-h-24 overflow-y-auto">
                 {audits.slice(0, 3).map((a, idx) => (
                   <div
                     key={idx}
-                    className="p-1.5 rounded bg-slate-800 border border-slate-700 text-[10px]"
+                    className="p-1.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px]"
                   >
-                    <div className="flex items-center justify-between text-slate-400 mb-0.5">
-                      <span className="text-amber-400 font-mono">
+                    <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-0.5">
+                      <span className="text-amber-500 dark:text-amber-400 font-mono">
                         {"★".repeat(a.rating)}
                         {"☆".repeat(5 - a.rating)}
                       </span>
@@ -278,7 +278,7 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
                         {new Date(a.timestamp).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-slate-300">{a.comment}</p>
+                    <p className="text-slate-800 dark:text-slate-300">{a.comment}</p>
                   </div>
                 ))}
               </div>
@@ -289,16 +289,16 @@ Generated via GKL Bus Mobility & Infrastructure Audit Platform.`;
         {/* Civic Call-to-Action */}
         <button
           onClick={handleCopyComplaintSlip}
-          className="w-full py-2 bg-slate-700 hover:bg-slate-650 text-slate-100 border border-slate-600 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
+          className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-650 text-slate-700 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors"
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-emerald-400">Copied Complaint Slip!</span>
+              <Check className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+              <span className="text-emerald-600 dark:text-emerald-400">Copied Complaint Slip!</span>
             </>
           ) : (
             <>
-              <Copy className="w-3.5 h-3.5 text-cyan-400" />
+              <Copy className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               <span>Copy Council Complaint Slip</span>
             </>
           )}

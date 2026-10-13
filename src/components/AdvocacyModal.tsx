@@ -71,19 +71,19 @@ Generated automatically via GKL Bus Mobility & Infrastructure Audit Platform.
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl text-xs text-slate-300 overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl text-xs text-slate-700 dark:text-slate-300 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-700 bg-slate-750/70 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-750/70 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
+            <div className="p-2 rounded-xl bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20">
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">
                 Council Action Advocacy Report
               </h2>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Formal civic dossier for submission to DBKL, Prasarana & APAD
               </p>
             </div>
@@ -91,7 +91,7 @@ Generated automatically via GKL Bus Mobility & Infrastructure Audit Platform.
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700"
           >
             <X className="w-4 h-4" />
           </button>
@@ -99,25 +99,25 @@ Generated automatically via GKL Bus Mobility & Infrastructure Audit Platform.
 
         {/* Report Content */}
         <div className="p-6 overflow-y-auto space-y-4 flex-1">
-          <div className="bg-slate-900 p-4 rounded-xl border border-slate-750 font-mono text-[11px] leading-relaxed text-slate-200 whitespace-pre-wrap max-h-80 overflow-y-auto">
+          <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-750 font-mono text-[11px] leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-wrap max-h-80 overflow-y-auto">
             {reportText}
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-3.5 border-t border-slate-700 bg-slate-800/80 flex items-center justify-end gap-3">
+        <div className="px-6 py-3.5 border-t border-slate-200 dark:border-slate-700 bg-slate-100/80 dark:bg-slate-800/80 flex items-center justify-end gap-3">
           <button
             onClick={handleCopy}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-650 text-slate-200 font-semibold rounded-xl flex items-center gap-2 transition-colors"
+            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-650 text-slate-800 dark:text-slate-200 font-semibold rounded-xl flex items-center gap-2 transition-colors"
           >
             {copied ? (
               <>
-                <Check className="w-4 h-4 text-emerald-400" />
-                <span className="text-emerald-400">Copied!</span>
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-emerald-600 dark:text-emerald-400">Copied!</span>
               </>
             ) : (
               <>
-                <Copy className="w-4 h-4 text-slate-300" />
+                <Copy className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                 <span>Copy Report Text</span>
               </>
             )}
@@ -125,7 +125,7 @@ Generated automatically via GKL Bus Mobility & Infrastructure Audit Platform.
 
           <button
             onClick={handleDownload}
-            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl flex items-center gap-2 transition-colors"
+            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl flex items-center gap-2 transition-colors shadow-sm"
           >
             <Download className="w-4 h-4" />
             <span>Download Action Dossier (.txt)</span>
